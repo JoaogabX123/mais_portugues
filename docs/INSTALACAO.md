@@ -67,6 +67,7 @@ $banco = "mais_portugues";
 $port = 3306;
 ?>
 ```
+Por fim, mover o projeto para dentro da pasta C:\xampp\htdocs
 
 Se suas credenciais MySQL forem diferentes, edite o arquivo acima.
 
