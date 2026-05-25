@@ -9,6 +9,7 @@ $rotasPermitidas = [
     'login' => __DIR__ . '/../app/routes/login.php',
     'logout' => __DIR__ . '/../app/routes/logout.php',
     'usuarios' => __DIR__ . '/../app/routes/usuarios.php',
+    'recuperacao' => __DIR__ . '/../app/routes/recuperacao.php',
     'questoes' => __DIR__ . '/../app/routes/questoes.php',
 ];
 

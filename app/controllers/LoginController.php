@@ -41,6 +41,21 @@ class LoginController {
             // Atualizar último login
             Usuario::atualizarUltimoLogin($usuario['id']);
             
+            if (!empty($dados['lembrar'])) {
+                $token = bin2hex(random_bytes(32));
+                Usuario::definirTokenLembrar($usuario['id'], $token);
+                setcookie('lembrar_login', $token, [
+                    'expires' => time() + (30 * 86400),
+                    'path' => '/',
+                    'httponly' => true,
+                    'secure' => false,
+                    'samesite' => 'Lax'
+                ]);
+            } else {
+                Usuario::limparTokenLembrar($_COOKIE['lembrar_login'] ?? '');
+                setcookie('lembrar_login', '', time() - 3600, '/', '', false, true);
+            }
+
             resposta_sucesso(null, 'Login realizado com sucesso');
             
         } catch (Exception $e) {

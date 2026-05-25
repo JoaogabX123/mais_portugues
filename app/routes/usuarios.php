@@ -33,6 +33,10 @@ try {
         case 'salvar_recuperacao':
             SessaoController::salvar_recuperacao();
             break;
+
+        case 'obter_recuperacao':
+            SessaoController::obter_recuperacao();
+            break;
         
         default:
             resposta_erro('Ação não reconhecida', 400);
