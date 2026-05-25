@@ -226,6 +226,120 @@ class QuestaoController {
     }
     
     /**
+     * Enviar questao localmente para outro usuario cadastrado.
+     * POST /routes/questoes.php?acao=enviar com JSON {id, destinatario, descricao}
+     */
+    public static function enviar() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $dados = obterDadosJSON();
+
+            $id = (int)($dados['id'] ?? 0);
+            $destinatarioBusca = trim($dados['destinatario'] ?? ($dados['email'] ?? ''));
+            $descricao = trim($dados['descricao'] ?? '');
+
+            $erros = [];
+            if (!$id) {
+                $erros[] = 'ID da questao e obrigatorio';
+            }
+            if ($destinatarioBusca === '') {
+                $erros[] = 'Informe o email ou nome de usuario do professor';
+            }
+            if ($descricao === '') {
+                $erros[] = 'Descricao do envio e obrigatoria';
+            }
+
+            if (!empty($erros)) {
+                resposta_validacao($erros);
+            }
+
+            $questao = Questao::buscarPorId($id, $usuario_id);
+            if (!$questao) {
+                resposta_erro('Questao nao encontrada', 404);
+            }
+
+            $usuario = Usuario::buscarPorId($usuario_id);
+            if (!$usuario) {
+                resposta_erro('Usuario remetente nao encontrado', 404);
+            }
+
+            $buscaDestinatario = Usuario::buscarPorEmailOuNome($destinatarioBusca);
+            if (!empty($buscaDestinatario['ambiguo'])) {
+                resposta_erro('Mais de um professor usa esse nome. Envie pelo email para identificar o destinatario.', 422);
+            }
+
+            $destinatario = $buscaDestinatario['usuario'] ?? null;
+            if (!$destinatario) {
+                resposta_erro('Professor destinatario nao encontrado', 404);
+            }
+
+            if ((int)$destinatario['id'] === $usuario_id) {
+                resposta_erro('Escolha outro professor para receber a questao', 422);
+            }
+
+            $questaoCopiada = Questao::copiarParaUsuario($questao, (int)$destinatario['id']);
+            $idEnvio = EnvioQuestao::registrar(
+                $id,
+                $usuario_id,
+                $destinatario,
+                $descricao,
+                $questaoCopiada['id'] ?? null
+            );
+
+            resposta_sucesso([
+                'id_envio' => $idEnvio,
+                'id_questao_recebida' => $questaoCopiada['id'] ?? null,
+                'destinatario' => [
+                    'id' => (int)$destinatario['id'],
+                    'nome' => $destinatario['nome'],
+                    'email' => $destinatario['email']
+                ]
+            ], 'Questao enviada localmente com sucesso');
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao enviar questao: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Listar questoes recebidas que ainda nao foram notificadas ao usuario.
+     * GET /routes/questoes.php?acao=recebidas
+     */
+    public static function recebidas() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $envios = EnvioQuestao::listarRecebidasNaoNotificadas($usuario_id);
+
+            resposta_sucesso([
+                'total' => count($envios),
+                'envios' => $envios
+            ]);
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao consultar questoes recebidas: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Marcar avisos de questoes recebidas como exibidos.
+     * POST /routes/questoes.php?acao=marcar_recebidas_notificadas com JSON {ids: []}
+     */
+    public static function marcarRecebidasNotificadas() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $dados = obterDadosJSON();
+            $ids = $dados['ids'] ?? [];
+
+            EnvioQuestao::marcarComoNotificadas($usuario_id, $ids);
+
+            resposta_sucesso(null, 'Avisos de recebimento marcados como exibidos');
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao marcar avisos de recebimento: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Salvar imagem
      */
     private static function salvar_imagem($arquivo) {

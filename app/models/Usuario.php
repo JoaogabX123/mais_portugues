@@ -36,6 +36,67 @@ class Usuario {
         
         return $usuario;
     }
+
+    /**
+     * Buscar professor ativo por email ou nome.
+     */
+    public static function buscarPorEmailOuNome($identificador) {
+        global $conexao;
+
+        $identificador = trim((string)$identificador);
+        if ($identificador === '') {
+            return ['usuario' => null, 'ambiguo' => false];
+        }
+
+        if (filter_var($identificador, FILTER_VALIDATE_EMAIL)) {
+            $stmt = $conexao->prepare(
+                "SELECT id, email, nome, tipo, status
+                 FROM usuarios
+                 WHERE email = ? AND status = 1
+                 LIMIT 1"
+            );
+
+            if (!$stmt) {
+                throw new Exception('Erro ao preparar query: ' . $conexao->error);
+            }
+
+            $stmt->bind_param("s", $identificador);
+            $stmt->execute();
+            $resultado = $stmt->get_result();
+            $usuario = $resultado->fetch_assoc() ?: null;
+            $stmt->close();
+
+            return ['usuario' => $usuario, 'ambiguo' => false];
+        }
+
+        $stmt = $conexao->prepare(
+            "SELECT id, email, nome, tipo, status
+             FROM usuarios
+             WHERE nome = ? AND status = 1
+             ORDER BY id ASC
+             LIMIT 2"
+        );
+
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("s", $identificador);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+
+        $usuarios = [];
+        while ($row = $resultado->fetch_assoc()) {
+            $usuarios[] = $row;
+        }
+
+        $stmt->close();
+
+        return [
+            'usuario' => count($usuarios) === 1 ? $usuarios[0] : null,
+            'ambiguo' => count($usuarios) > 1
+        ];
+    }
     
     /**
      * Buscar usuário por ID

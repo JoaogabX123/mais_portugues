@@ -779,6 +779,12 @@ main {
     display: block;
 }
 
+.aviso-recebida a {
+    color: var(--color-success-text);
+    font-weight: bold;
+    text-decoration: underline;
+}
+
 .aviso.excluida {
     background: var(--color-error);
     color: var(--color-error-text);
@@ -957,6 +963,17 @@ main {
     padding: 35px 40px;
     text-align: center;
     width: 360px;
+}
+
+.modal-envio {
+    width: 520px;
+    max-width: 92vw;
+    text-align: left;
+}
+
+.modal-envio h2,
+.modal-envio .modal-botoes {
+    text-align: center;
 }
 
 .modal h2 {
@@ -1176,6 +1193,10 @@ main {
     .modal {
         width: 90%;
         max-width: 360px;
+    }
+
+    .modal-envio {
+        max-width: 520px;
     }
 
     .questao-card {

@@ -3,7 +3,8 @@
  * ROTA: Questões
  * Endpoints para CRUD de questões
  * GET  /app/routes/questoes.php?acao=listar|buscar
- * POST /app/routes/questoes.php?acao=salvar|deletar
+ * POST /app/routes/questoes.php?acao=salvar|deletar|enviar
+ * enviar usa JSON {id, destinatario, descricao}
  */
 
 require_once __DIR__ . '/../config/config.php';
@@ -29,6 +30,18 @@ try {
         case 'deletar':
         case 'excluir':
             QuestaoController::deletar();
+            break;
+
+        case 'enviar':
+            QuestaoController::enviar();
+            break;
+
+        case 'recebidas':
+            QuestaoController::recebidas();
+            break;
+
+        case 'marcar_recebidas_notificadas':
+            QuestaoController::marcarRecebidasNotificadas();
             break;
         
         default:
