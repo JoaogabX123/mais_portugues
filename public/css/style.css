@@ -661,6 +661,57 @@ header input {
     width: 100%;
 }
 
+.linha-lembrar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 20px;
+    font-size: 12px;
+}
+
+.linha-lembrar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.75);
+    white-space: nowrap;
+}
+
+.linha-lembrar input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    accent-color: rgb(82, 202, 250);
+}
+
+.linha-lembrar a {
+    color: rgb(82, 202, 250);
+    text-decoration: none;
+}
+
+.linha-lembrar a:hover {
+    text-decoration: underline;
+}
+
+.divisor {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0 4px;
+    color: rgba(255,255,255,0.35);
+    font-size: 12px;
+}
+
+.divisor::before,
+.divisor::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.18);
+}
+
 .erro {
     background: var(--color-danger);
     color: white;
@@ -670,6 +721,47 @@ header input {
     text-align: center;
     font-size: 14px;
     display: none;
+}
+
+.sucesso-login {
+    background: rgba(38, 145, 84, 0.92);
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+}
+
+.sucesso-login a {
+    color: white;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.recuperar-card {
+    max-width: 430px;
+}
+
+.texto-apoio {
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.btn-espaco {
+    margin-bottom: 10px;
+}
+
+.btn-secondary-login {
+    background: rgba(255,255,255,0.12);
+    color: white;
+}
+
+.btn-secondary-login:hover {
+    background: rgba(255,255,255,0.2);
 }
 
 .signup-link, .login-link {

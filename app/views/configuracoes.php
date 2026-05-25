@@ -357,10 +357,10 @@ if (!isset($_SESSION['usuario_id'])) {
             <div class="config-card-header">🔑 Forma de Recuperar Senha</div>
             <div class="config-card-body">
                 <p style="font-size:0.88rem;color:#6b7a99;margin-bottom:4px;">
-                    Escolha como você deseja recuperar o acesso à sua conta caso esqueça a senha:
+                    Configure a pergunta usada para recuperar a senha localmente, sem envio de e-mail:
                 </p>
                 <div class="recuperacao-opcoes">
-                    <label class="recuperacao-opcao" id="opcao_email_label">
+                    <label class="recuperacao-opcao" id="opcao_email_label" style="display:none;">
                         <input type="radio" name="recuperacao" value="email" checked onchange="selecionarOpcao('email')">
                         <div>
                             <div class="opcao-titulo">📧 Por e-mail</div>
@@ -391,7 +391,7 @@ if (!isset($_SESSION['usuario_id'])) {
                     <div class="campo-config">
                         <label>Resposta</label>
                         <input type="text" id="cfg_resposta_secreta" placeholder="Digite sua resposta...">
-                        <span class="hint">A resposta é sensível a maiúsculas e minúsculas.</span>
+                        <span class="hint">A resposta pode ser digitada com letras maiúsculas ou minúsculas.</span>
                     </div>
                 </div>
 
@@ -409,7 +409,7 @@ if (!isset($_SESSION['usuario_id'])) {
     window.addEventListener('DOMContentLoaded', async () => {
         await recarregarDados();
         // Marca a opção selecionada visualmente ao carregar
-        selecionarOpcao('email');
+        await carregarRecuperacao();
     });
 
     async function recarregarDados() {
@@ -424,6 +424,28 @@ if (!isset($_SESSION['usuario_id'])) {
             document.getElementById('cfg_email').value = dadosUsuario.email || '';
         } catch (e) {
             mostrarAviso('Erro ao carregar dados do usuário.', 'erro');
+        }
+    }
+
+    async function carregarRecuperacao() {
+        try {
+            const res = await fetch(`${API_URL}usuarios&acao=obter_recuperacao`, {
+                credentials: 'include'
+            });
+            const data = await res.json();
+            const recuperacao = data.dados || {};
+            const metodo = 'perguntas';
+
+            const radio = document.querySelector(`input[name="recuperacao"][value="${metodo}"]`);
+            if (radio) {
+                radio.checked = true;
+            }
+            if (recuperacao.pergunta) {
+                document.getElementById('cfg_pergunta').value = recuperacao.pergunta;
+            }
+            selecionarOpcao('perguntas');
+        } catch (e) {
+            selecionarOpcao('perguntas');
         }
     }
 
@@ -523,11 +545,11 @@ if (!isset($_SESSION['usuario_id'])) {
     }
 
     async function salvarRecuperacao() {
-        const metodo = document.querySelector('input[name="recuperacao"]:checked')?.value || 'email';
+        const metodo = 'perguntas';
         const pergunta = document.getElementById('cfg_pergunta')?.value || '';
         const resposta  = document.getElementById('cfg_resposta_secreta')?.value.trim() || '';
 
-        if (metodo === 'perguntas' && (!pergunta || !resposta)) {
+        if (!pergunta || !resposta) {
             mostrarAviso('Selecione uma pergunta e informe a resposta.', 'erro');
             return;
         }

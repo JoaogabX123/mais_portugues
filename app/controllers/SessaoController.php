@@ -28,6 +28,20 @@ class SessaoController {
         }
     }
 
+    public static function obter_recuperacao() {
+        try {
+            $id = verificarAutenticacao();
+            $dados = Usuario::obterRecuperacaoUsuario($id);
+
+            resposta_sucesso([
+                'metodo' => $dados['recuperacao_metodo'] ?: 'email',
+                'pergunta' => $dados['recuperacao_pergunta'] ?: ''
+            ], 'Preferencia de recuperacao carregada');
+        } catch (Exception $e) {
+            resposta_erro('Erro ao carregar recuperacao: ' . $e->getMessage(), 500);
+        }
+    }
+
     /**
      * POST /routes/usuarios.php?acao=criar
      */
@@ -104,22 +118,21 @@ class SessaoController {
      */
     public static function salvar_recuperacao() {
         try {
-            verificarAutenticacao();
+            $id = verificarAutenticacao();
             $dados = obterDadosJSON();
 
-            $metodo = $dados['metodo'] ?? 'email';
-            if (!in_array($metodo, ['email', 'perguntas'], true)) {
-                resposta_validacao(['Metodo de recuperacao invalido']);
-            }
+            $metodo = 'perguntas';
 
-            if ($metodo === 'perguntas' && (empty($dados['pergunta']) || empty($dados['resposta']))) {
+            if (empty($dados['pergunta']) || empty($dados['resposta'])) {
                 resposta_validacao(['Selecione uma pergunta e informe a resposta']);
             }
 
-            $_SESSION['recuperacao'] = [
-                'metodo' => $metodo,
-                'pergunta' => $dados['pergunta'] ?? ''
-            ];
+            Usuario::salvarRecuperacao(
+                $id,
+                $metodo,
+                $dados['pergunta'] ?? '',
+                $dados['resposta'] ?? ''
+            );
 
             resposta_sucesso(null, 'Preferencia de recuperacao salva');
         } catch (Exception $e) {

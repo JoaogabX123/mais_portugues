@@ -11,6 +11,9 @@ class LogoutController {
      */
     public static function fazer_logout() {
         try {
+            Usuario::limparTokenLembrar($_COOKIE['lembrar_login'] ?? '');
+            setcookie('lembrar_login', '', time() - 3600, '/', '', false, true);
+
             // Sessão já foi iniciada em config.php
             session_unset();
             session_destroy();

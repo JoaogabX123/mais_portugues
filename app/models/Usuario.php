@@ -10,6 +10,39 @@ class Usuario {
     public static function setConexao($conn) {
         self::$conexao = $conn;
     }
+
+    private static function garantirColunasSeguranca() {
+        global $conexao;
+
+        $colunas = [
+            'recuperacao_metodo' => "ALTER TABLE usuarios ADD COLUMN recuperacao_metodo ENUM('email', 'perguntas') NOT NULL DEFAULT 'email'",
+            'recuperacao_pergunta' => "ALTER TABLE usuarios ADD COLUMN recuperacao_pergunta VARCHAR(50) NULL",
+            'recuperacao_resposta_hash' => "ALTER TABLE usuarios ADD COLUMN recuperacao_resposta_hash VARCHAR(255) NULL",
+            'reset_token_hash' => "ALTER TABLE usuarios ADD COLUMN reset_token_hash VARCHAR(255) NULL",
+            'reset_token_expira_em' => "ALTER TABLE usuarios ADD COLUMN reset_token_expira_em DATETIME NULL",
+            'lembrar_token_hash' => "ALTER TABLE usuarios ADD COLUMN lembrar_token_hash VARCHAR(255) NULL",
+            'lembrar_expira_em' => "ALTER TABLE usuarios ADD COLUMN lembrar_expira_em DATETIME NULL"
+        ];
+
+        foreach ($colunas as $coluna => $sql) {
+            $stmt = $conexao->prepare(
+                "SELECT COUNT(*) AS total FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = ?"
+            );
+            if (!$stmt) {
+                throw new Exception('Erro ao preparar verificacao de coluna: ' . $conexao->error);
+            }
+
+            $stmt->bind_param("s", $coluna);
+            $stmt->execute();
+            $resultado = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if ((int) ($resultado['total'] ?? 0) === 0 && !$conexao->query($sql)) {
+                throw new Exception('Erro ao atualizar tabela usuarios: ' . $conexao->error);
+            }
+        }
+    }
     
     /**
      * Buscar usuário por email
@@ -245,6 +278,276 @@ class Usuario {
         }
 
         $stmt->close();
+        return true;
+    }
+
+    public static function definirTokenLembrar($id, $token, $dias = 30) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $id = (int) $id;
+        $hash = hash('sha256', $token);
+        $expiraEm = date('Y-m-d H:i:s', time() + ($dias * 86400));
+
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios SET lembrar_token_hash = ?, lembrar_expira_em = ? WHERE id = ?"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("ssi", $hash, $expiraEm, $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Erro ao salvar token de lembrar: ' . $stmt->error);
+        }
+
+        $stmt->close();
+        return $expiraEm;
+    }
+
+    public static function limparTokenLembrar($token) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        if ($token === '') {
+            return true;
+        }
+
+        $hash = hash('sha256', $token);
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios SET lembrar_token_hash = NULL, lembrar_expira_em = NULL WHERE lembrar_token_hash = ?"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("s", $hash);
+        $stmt->execute();
+        $stmt->close();
+        return true;
+    }
+
+    public static function buscarPorTokenLembrar($token) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $hash = hash('sha256', (string) $token);
+        $stmt = $conexao->prepare(
+            "SELECT id, email, nome, tipo FROM usuarios
+             WHERE lembrar_token_hash = ? AND lembrar_expira_em > NOW() AND status = 1 LIMIT 1"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("s", $hash);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+        $usuario = $resultado->num_rows ? $resultado->fetch_assoc() : null;
+        $stmt->close();
+
+        return $usuario;
+    }
+
+    public static function salvarRecuperacao($id, $metodo, $pergunta = '', $resposta = '') {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $id = (int) $id;
+        if (!in_array($metodo, ['email', 'perguntas'], true)) {
+            throw new Exception('Metodo de recuperacao invalido');
+        }
+
+        $pergunta = $metodo === 'perguntas' ? sanitizarTexto($pergunta) : null;
+        $respostaHash = $metodo === 'perguntas' ? password_hash(strtolower(trim($resposta)), PASSWORD_DEFAULT) : null;
+
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios
+             SET recuperacao_metodo = ?, recuperacao_pergunta = ?, recuperacao_resposta_hash = ?
+             WHERE id = ?"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("sssi", $metodo, $pergunta, $respostaHash, $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Erro ao salvar recuperacao: ' . $stmt->error);
+        }
+
+        $stmt->close();
+        return true;
+    }
+
+    public static function obterRecuperacaoUsuario($id) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $id = (int) $id;
+        $stmt = $conexao->prepare(
+            "SELECT recuperacao_metodo, recuperacao_pergunta FROM usuarios WHERE id = ? LIMIT 1"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $dados = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        return $dados ?: ['recuperacao_metodo' => 'email', 'recuperacao_pergunta' => null];
+    }
+
+    public static function obterRecuperacaoPorEmail($email) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $stmt = $conexao->prepare(
+            "SELECT recuperacao_metodo, recuperacao_pergunta, recuperacao_resposta_hash
+             FROM usuarios WHERE email = ? AND status = 1 LIMIT 1"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $dados = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$dados) {
+            return null;
+        }
+
+        return [
+            'metodo' => !empty($dados['recuperacao_resposta_hash']) ? 'perguntas' : ($dados['recuperacao_metodo'] ?: 'email'),
+            'pergunta' => $dados['recuperacao_pergunta'],
+            'pergunta_configurada' => !empty($dados['recuperacao_resposta_hash'])
+        ];
+    }
+
+    public static function validarRespostaRecuperacao($email, $resposta) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $stmt = $conexao->prepare(
+            "SELECT id, email, nome, recuperacao_resposta_hash
+             FROM usuarios
+             WHERE email = ? AND recuperacao_resposta_hash IS NOT NULL AND status = 1 LIMIT 1"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $usuario = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        $respostaNormalizada = strtolower(trim($resposta));
+        if (!$usuario || empty($usuario['recuperacao_resposta_hash']) ||
+            !password_verify($respostaNormalizada, $usuario['recuperacao_resposta_hash'])) {
+            return null;
+        }
+
+        return $usuario;
+    }
+
+    public static function redefinirSenhaComResposta($email, $resposta, $novaSenha) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        if (strlen($novaSenha) < 8 || !preg_match('/[A-Z]/', $novaSenha) ||
+            !preg_match('/[a-z]/', $novaSenha) || !preg_match('/\d/', $novaSenha)) {
+            throw new Exception('Senha deve ter minimo 8 caracteres, uma maiuscula, uma minuscula e um numero');
+        }
+
+        $usuario = self::validarRespostaRecuperacao($email, $resposta);
+        if (!$usuario) {
+            throw new Exception('Resposta incorreta');
+        }
+
+        $hashSenha = password_hash($novaSenha, PASSWORD_DEFAULT);
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios
+             SET senha = ?, reset_token_hash = NULL, reset_token_expira_em = NULL,
+                 lembrar_token_hash = NULL, lembrar_expira_em = NULL
+             WHERE id = ?"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $id = (int) $usuario['id'];
+        $stmt->bind_param("si", $hashSenha, $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Erro ao redefinir senha: ' . $stmt->error);
+        }
+
+        $stmt->close();
+        return true;
+    }
+
+    public static function criarTokenReset($id) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        $id = (int) $id;
+        $token = bin2hex(random_bytes(32));
+        $hash = hash('sha256', $token);
+        $expiraEm = date('Y-m-d H:i:s', time() + 3600);
+
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios SET reset_token_hash = ?, reset_token_expira_em = ? WHERE id = ?"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("ssi", $hash, $expiraEm, $id);
+        if (!$stmt->execute()) {
+            throw new Exception('Erro ao gerar token: ' . $stmt->error);
+        }
+
+        $stmt->close();
+        return $token;
+    }
+
+    public static function redefinirSenhaComToken($token, $novaSenha) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
+        if (strlen($novaSenha) < 8 || !preg_match('/[A-Z]/', $novaSenha) ||
+            !preg_match('/[a-z]/', $novaSenha) || !preg_match('/\d/', $novaSenha)) {
+            throw new Exception('Senha deve ter minimo 8 caracteres, uma maiuscula, uma minuscula e um numero');
+        }
+
+        $hashToken = hash('sha256', $token);
+        $hashSenha = password_hash($novaSenha, PASSWORD_DEFAULT);
+
+        $stmt = $conexao->prepare(
+            "UPDATE usuarios
+             SET senha = ?, reset_token_hash = NULL, reset_token_expira_em = NULL,
+                 lembrar_token_hash = NULL, lembrar_expira_em = NULL
+             WHERE reset_token_hash = ? AND reset_token_expira_em > NOW()"
+        );
+        if (!$stmt) {
+            throw new Exception('Erro ao preparar query: ' . $conexao->error);
+        }
+
+        $stmt->bind_param("ss", $hashSenha, $hashToken);
+        if (!$stmt->execute()) {
+            throw new Exception('Erro ao redefinir senha: ' . $stmt->error);
+        }
+
+        $alterado = $stmt->affected_rows > 0;
+        $stmt->close();
+
+        if (!$alterado) {
+            throw new Exception('Token invalido ou expirado');
+        }
+
         return true;
     }
 }
