@@ -223,8 +223,67 @@ class Questao {
     }
     
     /**
-     * Atualizar questão
+     * Copiar uma questao existente para outro usuario.
      */
+    public static function copiarParaUsuario($questao, $idUsuarioDestino) {
+        $dados = [
+            'tipo' => $questao['tipo'] ?? 'objetiva',
+            'status' => $questao['status'] ?? 'rascunho',
+            'titulo' => self::textoParaCopia($questao['titulo'] ?? ''),
+            'genero' => self::textoParaCopia($questao['genero'] ?? ''),
+            'subgenero' => self::textoParaCopia($questao['subgenero'] ?? ''),
+            'especificacao' => self::textoParaCopia($questao['especificacao'] ?? ''),
+            'enunciado' => self::textoParaCopia($questao['enunciado'] ?? ''),
+            'explicacao' => self::textoParaCopia($questao['explicacao'] ?? ''),
+            'correta' => $questao['correta'] ?? ($questao['resposta_correta'] ?? null),
+            'imagem' => self::copiarImagemLocal($questao['imagem'] ?? ''),
+            'id_usuario_criador' => (int)$idUsuarioDestino
+        ];
+
+        if (($dados['tipo'] ?? '') === 'objetiva' && !empty($questao['alternativas'])) {
+            $dados['alternativas'] = [];
+            foreach ($questao['alternativas'] as $letra => $texto) {
+                $dados['alternativas'][$letra] = self::textoParaCopia($texto);
+            }
+        }
+
+        return self::criar($dados);
+    }
+
+    private static function textoParaCopia($texto) {
+        return html_entity_decode((string)$texto, ENT_QUOTES, 'UTF-8');
+    }
+
+    private static function copiarImagemLocal($caminhoImagem) {
+        $caminhoImagem = trim((string)$caminhoImagem);
+        if ($caminhoImagem === '') {
+            return '';
+        }
+
+        $origem = PUBLIC_PATH . '/' . ltrim($caminhoImagem, '/\\');
+        if (!is_file($origem)) {
+            return $caminhoImagem;
+        }
+
+        $extensao = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
+        if (!in_array($extensao, EXTENSOES_PERMITIDAS)) {
+            return $caminhoImagem;
+        }
+
+        if (!file_exists(UPLOADS_PATH)) {
+            mkdir(UPLOADS_PATH, 0755, true);
+        }
+
+        $destinoNome = uniqid('img_envio_') . '.' . $extensao;
+        $destino = UPLOADS_PATH . '/' . $destinoNome;
+
+        if (!copy($origem, $destino)) {
+            return $caminhoImagem;
+        }
+
+        return 'uploads/' . $destinoNome;
+    }
+
     public static function atualizar($id, $dados) {
         global $conexao;
         

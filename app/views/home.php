@@ -133,21 +133,22 @@ if (!isset($_SESSION['usuario_id'])) {
     <!-- MODAL ENVIO -->
     <div class="modal-overlay" id="modal_envio">
 
-        <div class="modal">
+        <div class="modal modal-envio">
 
             <h2>Enviar Questão</h2>
 
             <div class="formulario">
 
                 <div class="campo">
-                    <label for="email_destinatario">
-                        Email do destinatário:
+                    <label for="destinatario_envio">
+                        Email ou nome de usuario do professor:
                     </label>
 
                     <input 
-                        type="email"
-                        id="email_destinatario"
-                        placeholder="exemplo@email.com"
+                        type="text"
+                        id="destinatario_envio"
+                        placeholder="email@exemplo.com ou nome"
+                        autocomplete="off"
                     >
                 </div>
 
@@ -174,7 +175,7 @@ if (!isset($_SESSION['usuario_id'])) {
                     <textarea 
                         id="questao_envio"
                         disabled
-                        style="height:100px;"
+                        style="height:180px;"
                     ></textarea>
 
                 </div>
@@ -187,6 +188,7 @@ if (!isset($_SESSION['usuario_id'])) {
             >
 
                 <button 
+                    id="btn_enviar_questao"
                     class="btn salvar"
                     onclick="enviarQuestao()"
                 >
@@ -246,6 +248,7 @@ if (!isset($_SESSION['usuario_id'])) {
         let questaoAtualParaExcluir = null;
         let questaoAtualParaEnviar = null;
         let questoesCarregadas = [];
+        let verificandoRecebidas = false;
 
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -285,7 +288,9 @@ if (!isset($_SESSION['usuario_id'])) {
                     aviso.className = 'aviso excluida';
                 }
 
-                carregarQuestoes();
+                await carregarQuestoes();
+                verificarQuestoesRecebidas();
+                setInterval(verificarQuestoesRecebidas, 30000);
 
                 document.addEventListener('click', (e) => {
 
@@ -432,8 +437,7 @@ if (!isset($_SESSION['usuario_id'])) {
                             <button
                                 class="btn btn-acoes enviar"
                                 onclick="abrirModalEnvio(
-                                    '${encodeURIComponent(q.id)}',
-                                    '${encodeURIComponent(q.titulo || '')}'
+                                    '${encodeURIComponent(q.id)}'
                                 )"
                             >
                                 📤 Enviar
@@ -468,6 +472,101 @@ if (!isset($_SESSION['usuario_id'])) {
         }
 
 
+        async function verificarQuestoesRecebidas() {
+
+            if (verificandoRecebidas) return;
+            verificandoRecebidas = true;
+
+            try {
+
+                const res = await fetch(
+                    `${API_URL}questoes&acao=recebidas`,
+                    {
+                        credentials: 'include'
+                    }
+                );
+
+                if (!res.ok) return;
+
+                const resposta = await res.json();
+                const envios = resposta.dados?.envios || [];
+
+                if (!resposta.ok || !envios.length) return;
+
+                mostrarAvisoQuestoesRecebidas(envios);
+
+                await fetch(
+                    `${API_URL}questoes&acao=marcar_recebidas_notificadas`,
+                    {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ids: envios.map(envio => envio.id_envio)
+                        })
+                    }
+                );
+
+                carregarQuestoes();
+
+            } catch (erro) {
+
+                console.error('Erro ao verificar questoes recebidas:', erro);
+            } finally {
+
+                verificandoRecebidas = false;
+            }
+        }
+
+
+        function mostrarAvisoQuestoesRecebidas(envios) {
+
+            const aviso =
+                document.getElementById('aviso');
+
+            const primeiro = envios[0];
+            const remetente = limparTexto(
+                primeiro.remetente_nome ||
+                primeiro.remetente_email ||
+                'um professor'
+            );
+
+            aviso.innerHTML = '';
+
+            if (envios.length === 1) {
+
+                const link = document.createElement('a');
+                link.href =
+                    `./?page=questao_${encodeURIComponent(primeiro.tipo)}&id=${encodeURIComponent(primeiro.id_questao_recebida)}`;
+                link.textContent =
+                    limparTexto(primeiro.titulo || 'questao recebida');
+
+                aviso.append(
+                    'Voce recebeu a questao ',
+                    link,
+                    ` de ${remetente}.`
+                );
+
+            } else {
+
+                const link = document.createElement('a');
+                link.href =
+                    `./?page=questao_${encodeURIComponent(primeiro.tipo)}&id=${encodeURIComponent(primeiro.id_questao_recebida)}`;
+                link.textContent = 'Abrir a mais recente';
+
+                aviso.append(
+                    `Voce recebeu ${envios.length} questoes novas. `,
+                    link,
+                    '.'
+                );
+            }
+
+            aviso.className = 'aviso sucesso aviso-recebida';
+        }
+
+
         function toggleDropdownUsuario() {
 
             document
@@ -492,16 +591,69 @@ if (!isset($_SESSION['usuario_id'])) {
         }
 
 
-        function abrirModalEnvio(questaoId, titulo) {
+        function abrirModalEnvio(questaoId) {
 
-            questaoAtualParaEnviar = questaoId;
+            const id = decodeURIComponent(questaoId);
+            const questao = questoesCarregadas.find(q => String(q.id) === String(id));
+
+            questaoAtualParaEnviar = id;
 
             document.getElementById('questao_envio').value =
-                `[ID: ${decodeURIComponent(questaoId)}] ${decodeURIComponent(titulo)}`;
+                montarTextoQuestaoEnvio(questao);
 
             document
                 .getElementById('modal_envio')
                 .classList.add('ativo');
+        }
+
+
+        function montarTextoQuestaoEnvio(q) {
+
+            if (!q) {
+                return 'Questao selecionada.';
+            }
+
+            const linhas = [
+                `ID: ${q.id}`,
+                `Titulo: ${limparTexto(q.titulo || '(sem titulo)')}`,
+                `Tipo: ${limparTexto(q.tipo || '')}`,
+                `Genero: ${limparTexto(q.genero || '-')}`
+            ];
+
+            if (q.subgenero) {
+                linhas.push(`Subgenero: ${limparTexto(q.subgenero)}`);
+            }
+
+            if (q.especificacao) {
+                linhas.push(`Especificacao: ${limparTexto(q.especificacao)}`);
+            }
+
+            linhas.push('', 'Enunciado:', limparTexto(q.enunciado || ''));
+
+            if (q.tipo === 'objetiva' && q.alternativas) {
+                linhas.push('', 'Alternativas:');
+                Object.keys(q.alternativas).sort().forEach(letra => {
+                    linhas.push(`${letra}) ${limparTexto(q.alternativas[letra] || '')}`);
+                });
+
+                if (q.correta) {
+                    linhas.push('', `Resposta correta: ${limparTexto(q.correta)}`);
+                }
+            }
+
+            if (q.explicacao) {
+                linhas.push('', 'Explicacao:', limparTexto(q.explicacao));
+            }
+
+            return linhas.join('\n');
+        }
+
+
+        function limparTexto(valor) {
+
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = String(valor);
+            return textarea.value.replace(/<[^>]*>/g, '').trim();
         }
 
 
@@ -511,7 +663,7 @@ if (!isset($_SESSION['usuario_id'])) {
                 .getElementById('modal_envio')
                 .classList.remove('ativo');
 
-            document.getElementById('email_destinatario').value = '';
+            document.getElementById('destinatario_envio').value = '';
 
             document.getElementById('descricao_envio').value = '';
 
@@ -586,8 +738,8 @@ if (!isset($_SESSION['usuario_id'])) {
 
         async function enviarQuestao() {
 
-            const email =
-                document.getElementById('email_destinatario')
+            const destinatario =
+                document.getElementById('destinatario_envio')
                 .value.trim();
 
             const descricao =
@@ -595,24 +747,74 @@ if (!isset($_SESSION['usuario_id'])) {
                 .value.trim();
 
 
-            if (!email) {
+            if (!destinatario) {
 
-                alert('Digite um email válido');
+                alert('Digite o email ou nome de usuario do professor');
                 return;
             }
 
             if (!descricao) {
 
-                alert('Digite uma descrição');
+                alert('Digite uma descricao');
                 return;
+            }
+
+            const botao =
+                document.getElementById('btn_enviar_questao');
+
+            let destinatarioConfirmado = destinatario;
+
+            try {
+
+                botao.disabled = true;
+                botao.textContent = 'Enviando...';
+
+                const res = await fetch(`${API_URL}questoes&acao=enviar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        id: decodeURIComponent(questaoAtualParaEnviar || ''),
+                        destinatario,
+                        descricao
+                    })
+                });
+
+                const resposta = await res.json();
+
+                if (!res.ok || !resposta.ok) {
+                    const mensagem =
+                        resposta.erros?.join('\n') ||
+                        resposta.erro ||
+                        'Erro ao enviar questao.';
+
+                    alert(mensagem);
+                    return;
+                }
+
+                destinatarioConfirmado =
+                    resposta.dados?.destinatario?.nome ||
+                    resposta.dados?.destinatario?.email ||
+                    destinatario;
+
+            } catch (erro) {
+
+                console.error('Erro ao enviar questao:', erro);
+                alert('Erro ao enviar questao.');
+                return;
+
+            } finally {
+
+                botao.disabled = false;
+                botao.textContent = 'Enviar';
             }
 
             const aviso =
                 document.getElementById('aviso');
 
             aviso.textContent =
-                '✔ Questão enviada com sucesso para ' +
-                email + '!';
+                'Questao enviada localmente para ' +
+                destinatarioConfirmado + '!';
 
             aviso.className = 'aviso sucesso';
 
