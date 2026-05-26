@@ -20,17 +20,24 @@ if (!isset($_SESSION['usuario_id'])) {
     <script>const BASE_URL = '<?php echo BASE_URL; ?>'; const API_URL = '<?php echo API_URL; ?>'; const UPLOAD_URL = '<?php echo UPLOAD_URL; ?>';</script>
 </head>
 <body>
-    <header>
-        <h1>+Português</h1>
+    <header class="topbar">
+        <nav class="topbar-inner">
+            <a href="./?page=home" class="logo">+Português</a>
+            <div class="nav-actions">
+                <a class="btn btn-ghost" href="./?page=home">Voltar ao Dashboard</a>
+            </div>
+        </nav>
     </header>
 
-    <main>
-        <div class="questao-aberta" id="conteudo">
-            <p style="text-align:center;color:#888;">Carregando...</p>
+    <main class="app-shell">
+        <div class="container">
+            <div class="questao-aberta" id="conteudo">
+                <p style="text-align:center;color:#888;">Carregando...</p>
+            </div>
         </div>
     </main>
 
-    <button class="btn-add" onclick="window.location='./?page=home'">+ Adicionar questão</button>
+    <button class="btn-add" onclick="window.location='./?page=criacao_dissertativa'">+ Adicionar questão</button>
 
     <script>
         const id = new URLSearchParams(window.location.search).get('id');
@@ -76,9 +83,9 @@ if (!isset($_SESSION['usuario_id'])) {
                     </div>
                     <div class="explicacao"><b>Explicação:</b><br><br>${q.explicacao || ''}</div>
                     <div class="botoes">
-                        <button class="btn btn-voltar" onclick="window.location='./?page=home'">Voltar</button>
-                        <button class="btn btn-editar" onclick="window.location='./?page=editar_questao&id=${encodeURIComponent(q.id)}'">Editar</button>
-                        <button class="btn btn-copiar" onclick="copiar()">Copiar</button>
+                        <button class="btn btn-secondary" onclick="window.location='./?page=home'">Voltar</button>
+                        <button class="btn btn-warning" onclick="window.location='./?page=editar_questao&id=${encodeURIComponent(q.id)}'">Editar</button>
+                        <button class="btn btn-ghost" onclick="copiar()">Copiar</button>
                     </div>
                 `;
             } catch (e) {

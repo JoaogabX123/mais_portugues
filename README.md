@@ -1,18 +1,33 @@
 # +Português - Gerenciador de Questões
 
-Aplicação PHP MVC para professores criarem, organizarem e reutilizarem questões objetivas e dissertativas com autenticação, upload de imagens e isolamento de dados por usuário.
+O **+Português** é uma aplicação PHP MVC feita para apoiar professores na criação, organização e reutilização de questões de língua portuguesa. O sistema trabalha com questões objetivas e dissertativas, permite anexar imagens aos enunciados e mantém os dados de cada usuário separados por autenticação.
+
+Na prática, o professor acessa a área logada, cadastra suas questões, salva rascunhos, publica materiais e usa filtros para encontrar rapidamente o que já foi produzido.
 
 ## Status
 
-- Autenticação com email e senha.
-- Cadastro, login e logout.
-- Sessões PHP com cookie `httponly` e `samesite=Lax`.
-- CRUD de questões objetivas e dissertativas.
+- Cadastro, login e logout com sessões PHP.
+- Criação, edição, listagem e exclusão de questões.
+- Suporte a questões objetivas com alternativas A-E.
+- Suporte a questões dissertativas.
 - Upload de imagens em `public/uploads/`.
 - Busca e filtros por tipo, status, gênero e subgênero.
-- Cada usuário acessa apenas as próprias questões.
-- Página de configurações com atualização de perfil e alteração de senha.
+- Área de configurações para atualizar perfil e senha.
+- Isolamento de dados: cada usuário vê apenas as próprias questões.
 - API pública centralizada em `public/api.php`.
+
+## Como Funciona
+
+O projeto segue uma organização MVC simples:
+
+- `public/index.php` recebe os acessos das telas e carrega a view correta.
+- `public/api.php` recebe as chamadas AJAX do frontend.
+- `app/routes/` decide qual rota interna será executada.
+- `app/controllers/` aplica as regras de negócio.
+- `app/models/` conversa com o banco de dados.
+- `app/views/` guarda as telas exibidas ao usuário.
+
+As telas usam JavaScript para chamar a API com `fetch`. Como as requisições usam `credentials: 'include'`, a sessão do usuário continua válida entre as ações.
 
 ## Documentação
 
@@ -88,6 +103,17 @@ POST /api.php?rota=questoes&acao=deletar
 
 No frontend, as requisições usam `credentials: 'include'` para manter a sessão.
 
+Fluxo resumido de uma chamada:
+
+```text
+Tela no navegador
+  -> public/api.php?rota=questoes&acao=listar
+  -> app/routes/questoes.php
+  -> QuestaoController
+  -> Model Questao
+  -> Banco de dados
+```
+
 ## Banco de Dados
 
 Banco padrão:
@@ -120,4 +146,4 @@ C:\xampp\php\php.exe -l public\api.php
 C:\xampp\mysql\bin\mysql.exe -uroot -e "USE mais_portugues; SHOW TABLES;"
 ```
 
-Atualizado em 17/05/2026.
+Atualizado em 25/05/2026.

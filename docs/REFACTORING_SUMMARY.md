@@ -1,10 +1,10 @@
 # Sumário de Refatoração MVC
 
-Este documento resume o estado atual da refatoração do +Português.
+Este documento resume o estado atual da refatoração MVC do +Português. Ele serve como uma visão rápida do que foi organizado, quais responsabilidades ficaram em cada pasta e quais recursos principais já estão prontos.
 
 ## Resultado
 
-O projeto foi organizado em uma arquitetura MVC simples:
+O projeto foi organizado em uma arquitetura MVC simples, com a entrada pública separada da lógica da aplicação:
 
 - `public/index.php`: router das telas.
 - `public/api.php`: entrada pública da API.
@@ -13,6 +13,8 @@ O projeto foi organizado em uma arquitetura MVC simples:
 - `app/controllers`: regras de negócio.
 - `app/routes`: dispatchers internos da API.
 - `app/views`: telas da aplicação.
+
+Com isso, as páginas ficam em `views`, as regras ficam nos `controllers` e as consultas ao banco ficam nos `models`. A pasta `public` concentra o que o navegador acessa diretamente.
 
 ## Melhorias Entregues
 
@@ -29,6 +31,8 @@ O projeto foi organizado em uma arquitetura MVC simples:
 - Validação de propriedade ao buscar, editar e excluir questões.
 
 ## Segurança
+
+As proteções principais foram mantidas no fluxo de autenticação, nas consultas ao banco e nas operações privadas da API:
 
 - Senhas armazenadas com `password_hash(PASSWORD_DEFAULT)`.
 - Login com `password_verify()`.
@@ -78,12 +82,13 @@ Rotas:
 - `usuarios`
 - `questoes`
 
+As rotas públicas passam por `public/api.php`, que encaminha a requisição para os arquivos em `app/routes/`. Esses arquivos chamam os controllers responsáveis por validar dados, consultar models e devolver JSON ao frontend.
+
 ## Documentos Atualizados
 
 - `README.md`
-- `docs/INSTALACAO.md`
 - `docs/MVC_DOCUMENTATION.md`
 - `docs/TESTE_API.md`
 - `docs/REFACTORING_SUMMARY.md`
 
-Atualizado em 17/05/2026.
+Atualizado em 25/05/2026.
