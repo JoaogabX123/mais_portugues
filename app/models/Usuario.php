@@ -177,6 +177,28 @@ class Usuario {
         
         return $existe;
     }
+
+    public static function validarDadosParaCriacao(array $dados)
+    {
+        $erros = [];
+
+        if (empty($dados['nome'])) {
+            $erros[] = 'Nome é obrigatório';
+        }
+
+        if (empty($dados['email']) || !filter_var($dados['email'], FILTER_VALIDATE_EMAIL)) {
+            $erros[] = 'Email válido é obrigatório';
+        }
+
+        if (empty($dados['senha'])) {
+            $erros[] = 'Senha é obrigatória';
+        } elseif (strlen($dados['senha']) < 8 || !preg_match('/[A-Z]/', $dados['senha']) ||
+                  !preg_match('/[a-z]/', $dados['senha']) || !preg_match('/\d/', $dados['senha'])) {
+            $erros[] = 'Senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um número';
+        }
+
+        return $erros;
+    }
     
     /**
      * Criar novo usuário
@@ -185,22 +207,7 @@ class Usuario {
         global $conexao;
         
         // Validar dados
-        $erros = [];
-        
-        if (empty($dados['nome'])) {
-            $erros[] = 'Nome é obrigatório';
-        }
-        
-        if (empty($dados['email']) || !filter_var($dados['email'], FILTER_VALIDATE_EMAIL)) {
-            $erros[] = 'Email válido é obrigatório';
-        }
-        
-        if (empty($dados['senha'])) {
-            $erros[] = 'Senha é obrigatória';
-        } elseif (strlen($dados['senha']) < 8 || !preg_match('/[A-Z]/', $dados['senha']) || 
-                  !preg_match('/[a-z]/', $dados['senha']) || !preg_match('/\d/', $dados['senha'])) {
-            $erros[] = 'Senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um número';
-        }
+        $erros = self::validarDadosParaCriacao($dados);
         
         if (!empty($erros)) {
             return ['sucesso' => false, 'erros' => $erros];

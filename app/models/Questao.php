@@ -229,12 +229,12 @@ class Questao {
         $dados = [
             'tipo' => $questao['tipo'] ?? 'objetiva',
             'status' => $questao['status'] ?? 'rascunho',
-            'titulo' => self::textoParaCopia($questao['titulo'] ?? ''),
-            'genero' => self::textoParaCopia($questao['genero'] ?? ''),
-            'subgenero' => self::textoParaCopia($questao['subgenero'] ?? ''),
-            'especificacao' => self::textoParaCopia($questao['especificacao'] ?? ''),
-            'enunciado' => self::textoParaCopia($questao['enunciado'] ?? ''),
-            'explicacao' => self::textoParaCopia($questao['explicacao'] ?? ''),
+            'titulo' => TextHelper::textoParaCopia($questao['titulo'] ?? ''),
+            'genero' => TextHelper::textoParaCopia($questao['genero'] ?? ''),
+            'subgenero' => TextHelper::textoParaCopia($questao['subgenero'] ?? ''),
+            'especificacao' => TextHelper::textoParaCopia($questao['especificacao'] ?? ''),
+            'enunciado' => TextHelper::textoParaCopia($questao['enunciado'] ?? ''),
+            'explicacao' => TextHelper::textoParaCopia($questao['explicacao'] ?? ''),
             'correta' => $questao['correta'] ?? ($questao['resposta_correta'] ?? null),
             'imagem' => self::copiarImagemLocal($questao['imagem'] ?? ''),
             'id_usuario_criador' => (int)$idUsuarioDestino
@@ -243,15 +243,11 @@ class Questao {
         if (($dados['tipo'] ?? '') === 'objetiva' && !empty($questao['alternativas'])) {
             $dados['alternativas'] = [];
             foreach ($questao['alternativas'] as $letra => $texto) {
-                $dados['alternativas'][$letra] = self::textoParaCopia($texto);
+                $dados['alternativas'][$letra] = TextHelper::textoParaCopia($texto);
             }
         }
 
         return self::criar($dados);
-    }
-
-    private static function textoParaCopia($texto) {
-        return html_entity_decode((string)$texto, ENT_QUOTES, 'UTF-8');
     }
 
     private static function copiarImagemLocal($caminhoImagem) {

@@ -104,6 +104,16 @@ Tabelas:
 
 O schema completo está em [docs/INSTALACAO.md](docs/INSTALACAO.md).
 
+## Testes Unitários
+
+Este projeto agora inclui um runner de testes simples em PHP puro, sem nenhum framework.
+
+Execute todos os testes com:
+
+```powershell
+php tests/run_tests.php
+```
+
 ## Segurança
 
 - Senhas com `password_hash(PASSWORD_DEFAULT)`.
