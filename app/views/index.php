@@ -1,11 +1,4 @@
 <?php
-/**
- * VIEW: Landing Page (Index)
- * Página inicial da aplicação
- * GET /app/views/index.php
- */
-
-// Sessão já foi iniciada em config.php
 if (isset($_SESSION['usuario_id'])) {
     header('Location: ./?page=home');
     exit;
@@ -15,220 +8,90 @@ if (isset($_SESSION['usuario_id'])) {
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>+Português</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-image: linear-gradient(30deg, cyan, rgb(35, 115, 235));
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            background-color: rgba(0, 0, 0, 0.8);
-            color: rgb(239, 249, 255);
-            padding: 20px;
-            text-align: center;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 100;
-        }
-
-        header h1 {
-            font-size: 2rem;
-        }
-
-        .nav-botoes {
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            display: flex;
-            gap: 10px;
-        }
-
-        .nav-botoes a {
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
-
-        .btn-entrar {
-            background-color: rgb(82, 202, 250);
-            color: #000;
-        }
-
-        .btn-entrar:hover {
-            background-color: rgb(60, 141, 248);
-            color: white;
-        }
-
-        .btn-cadastrar {
-            background-color: transparent;
-            color: rgb(82, 202, 250);
-            border: 2px solid rgb(82, 202, 250);
-        }
-
-        .btn-cadastrar:hover {
-            background-color: rgb(82, 202, 250);
-            color: #000;
-        }
-
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 80px 20px 60px;
-            gap: 20px;
-        }
-
-        .hero-titulo {
-            margin-top: -60px;
-        }
-
-        .hero-titulo h2 {
-            font-size: 3rem;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-            margin-bottom: 12px;
-        }
-
-        .hero-titulo p {
-            font-size: 1.55rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 600;
-            margin-bottom: 0;
-        }
-
-        .hero-descricao {
-            max-width: 520px;
-        }
-
-        .hero-descricao p {
-            font-size: 1.10rem;
-            color: rgba(255, 255, 255, 0.75);
-            line-height: 1.8;
-            letter-spacing: 0.3px;
-            text-align: center;
-        }
-
-        .botoes {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 10px;
-        }
-
-        .botoes a {
-            text-decoration: none;
-            padding: 18px 45px;
-            border-radius: 8px;
-            font-size: 17px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.5px;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
-        }
-
-        .btn-comecar {
-            background-color: white;
-            color: rgb(82, 202, 250);
-        }
-
-        .btn-comecar:hover {
-            background-color: rgb(82, 202, 250);
-            color: #000;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .btn-login {
-            background-color: rgba(0, 0, 0, 0.4);
-            color: aliceblue;
-            border: 2px solid aliceblue;
-        }
-
-        .btn-login:hover {
-            background-color: rgba(0, 0, 0, 0.6);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        footer {
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #aaa;
-            text-align: center;
-            padding: 18px;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        footer a {
-            color: #82caff;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        footer a:hover {
-            color: #fff;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/style.css">
 </head>
-<body>
+<body class="landing-page">
+    <header class="topbar landing-topbar">
+        <nav class="topbar-inner">
+            <a href="./" class="logo">+Português</a>
+            <div class="nav-actions">
+                <a href="./?page=login" class="btn btn-ghost">Entrar</a>
+                <a href="./?page=signup" class="btn btn-primary">Cadastrar</a>
+            </div>
+        </nav>
+    </header>
 
-<header>
-    <h1>+Português</h1>
-    <div class="nav-botoes">
-        <a href="./?page=login" class="btn-entrar">Entrar</a>
-        <a href="./?page=signup" class="btn-cadastrar">Cadastrar</a>
-    </div>
-</header>
+    <main class="landing-main">
+        <section class="landing-hero">
+            <div class="landing-copy">
+                <span class="landing-kicker">Banco de questões para professores</span>
+                <h1>+Português</h1>
+                <p>
+                    Crie, organize e reutilize questões objetivas e dissertativas em uma área simples,
+                    visual e feita para o dia a dia de quem ensina Português.
+                </p>
+                <div class="landing-actions">
+                    <a href="./?page=signup" class="btn btn-primary">Começar agora</a>
+                    <a href="./?page=login" class="btn btn-ghost">Já tenho conta</a>
+                </div>
+            </div>
 
-<main>
-    <div class="hero-titulo">
-        <h2>Bem-vindo ao +Português</h2>
-        <br>
-        <p>A sua plataforma completa de banco de questões para ensino de Português.</p>
-    </div>
+            <div class="landing-preview" aria-label="Prévia do painel">
+                <div class="preview-bar">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="preview-stat-row">
+                    <div>
+                        <strong>24</strong>
+                        <small>Questões</small>
+                    </div>
+                    <div>
+                        <strong>15</strong>
+                        <small>Objetivas</small>
+                    </div>
+                    <div>
+                        <strong>9</strong>
+                        <small>Dissertativas</small>
+                    </div>
+                </div>
+                <div class="preview-question">
+                    <span class="badge">Literatura</span>
+                    <h3>Interpretação de texto</h3>
+                    <p>Leia o trecho e identifique a alternativa que melhor resume a ideia central.</p>
+                </div>
+                <div class="preview-lines">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </section>
 
-    <div class="hero-descricao">
-        <p>
-            Organize, filtre, construa ou adicione suas questões e mantenha-as
-            armazenadas da melhor forma.
-        </p>
-    </div>
+        <section class="landing-features" aria-label="Recursos principais">
+            <article>
+                <strong>📂 Organização</strong>
+                <p>Use gêneros, subgêneros e filtros para encontrar rapidamente o que já foi criado.</p>
+            </article>
+            <article>
+                <strong>📝 Dois tipos</strong>
+                <p>Monte questões objetivas com alternativas ou propostas dissertativas com resposta esperada.</p>
+            </article>
+            <article>
+                <strong>🔒 Área privada</strong>
+                <p>Cada professor acessa apenas as próprias questões, com sessão e autenticação.</p>
+            </article>
+        </section>
+    </main>
 
-    <div class="botoes">
-        <a href="./?page=signup" class="btn-comecar">Começar Agora</a>
-        <a href="./?page=login" class="btn-login">Já tenho conta</a>
-    </div>
-</main>
-
-<footer>
-    <p>&copy; 2024 +Português. Todos os direitos reservados.</p>
-    <p>
-        <a href="info.php">Info</a> ·
-        <a href="termos.php">Termos de Uso</a> ·
-        <a href="configuracoes.php">Configurações</a>
-    </p>
-</footer>
+    <footer class="landing-footer">
+        <span>&copy; 2026 +Português.</span>
+        <nav>
+            <a href="./?page=info">Info</a>
+            <a href="./?page=termos">Termos</a>
+            <a href="./?page=login">Entrar</a>
+        </nav>
+    </footer>
 </body>
 </html>

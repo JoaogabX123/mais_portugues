@@ -24,7 +24,8 @@ if (!isset($_SESSION['usuario_id']) && !empty($_COOKIE['lembrar_login'])) {
 }
 
 // Determinar view a renderizar
-$page = isset($_GET['page']) ? sanitizarTexto($_GET['page']) : null;
+$page = isset($_GET['page']) ? $_GET['page'] : null;
+$page = $page !== null ? preg_replace('/[^a-z0-9_]/i', '', $page) : null;
 $authenticated = isset($_SESSION['usuario_id']);
 
 // Se tenta acessar página protegida sem autenticação
