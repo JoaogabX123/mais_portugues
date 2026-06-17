@@ -1,0 +1,395 @@
+<?php
+/**
+ * CONTROLLER: QuestaoController
+ * Gerencia CRUD de questões
+ */
+
+class QuestaoController {
+    /**
+     * Listar questões do usuário
+     * GET /routes/questoes.php?acao=listar&busca=...&tipo=...&status=...&genero=...
+     */
+    public static function listar() {
+        try {
+            $id_usuario = verificarAutenticacao();
+            
+            $busca = trim($_GET['busca'] ?? '');
+            $tipo = trim($_GET['tipo'] ?? '');
+            $status = trim($_GET['status'] ?? '');
+            $genero = trim($_GET['genero'] ?? '');
+            $subgenero = trim($_GET['subgenero'] ?? '');
+            
+            $filtros = [];
+            $filtros['id_usuario_criador'] = $id_usuario;
+            if (!empty($tipo)) $filtros['tipo'] = $tipo;
+            if (!empty($status)) $filtros['status'] = $status;
+            if (!empty($genero)) $filtros['genero'] = $genero;
+            if (!empty($subgenero)) $filtros['subgenero'] = $subgenero;
+            
+            $questoes = Questao::listar($filtros);
+            
+            // Aplicar busca em memória
+            if (!empty($busca)) {
+                $questoes = array_filter($questoes, function($q) use ($busca) {
+                    $busca_lower = strtolower($busca);
+                    return stripos(strtolower($q['titulo'] ?? ''), $busca_lower) !== false ||
+                           stripos(strtolower($q['enunciado'] ?? ''), $busca_lower) !== false;
+                });
+                $questoes = array_values($questoes);
+            }
+            
+            resposta_sucesso([
+                'total' => count($questoes),
+                'questoes' => $questoes
+            ]);
+            
+        } catch (Exception $e) {
+            resposta_erro('Erro ao listar questões: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Buscar questão por ID
+     * GET /routes/questoes.php?acao=buscar&id=X
+     * POST /routes/questoes.php?acao=buscar com JSON {id: X}
+     */
+    public static function buscar() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $id = $_GET['id'] ?? '';
+            
+            if (empty($id)) {
+                $dados = obterDadosJSON();
+                $id = $dados['id'] ?? '';
+            }
+            
+            if (empty($id)) {
+                resposta_erro('ID da questão é obrigatório', 400);
+            }
+            
+            $id = intval($id);
+            $questao = Questao::buscarPorId($id, $usuario_id);
+            
+            if (!$questao) {
+                resposta_erro('Questão não encontrada', 404);
+            }
+            
+            resposta_sucesso($questao);
+            
+        } catch (Exception $e) {
+            resposta_erro('Erro ao buscar questão: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Criar ou atualizar questão
+     * POST /routes/questoes.php?acao=salvar com FormData
+     */
+    public static function salvar() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            
+            $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+            $tipo = $_POST['tipo'] ?? 'objetiva';
+            $acao = $_POST['acao'] ?? 'salvar';
+            $status = ($acao === 'postar') ? 'publicada' : 'rascunho';
+            
+            // Validar campos obrigatórios
+            $erros = [];
+            if (empty($_POST['titulo'])) {
+                $erros[] = 'Título é obrigatório';
+            }
+            if (empty($_POST['genero'])) {
+                $erros[] = 'Gênero é obrigatório';
+            }
+            if (empty($_POST['enunciado'])) {
+                $erros[] = 'Enunciado é obrigatório';
+            }
+            
+            if ($tipo === 'objetiva') {
+                if (empty($_POST['correta'])) {
+                    $erros[] = 'Resposta correta é obrigatória';
+                }
+                $alternativas_vazias = [];
+                foreach (['A','B','C','D','E'] as $letra) {
+                    if (empty($_POST["alt_$letra"])) {
+                        $alternativas_vazias[] = $letra;
+                    }
+                }
+                if (!empty($alternativas_vazias)) {
+                    $erros[] = 'Alternativas vazias: ' . implode(', ', $alternativas_vazias);
+                }
+            }
+            
+            if (!empty($erros)) {
+                resposta_validacao($erros);
+            }
+            
+            // Processar upload de imagem
+            $caminhoImagem = $_POST['imagem_atual'] ?? '';
+            if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] !== UPLOAD_ERR_NO_FILE) {
+                $resultado = self::salvar_imagem($_FILES['imagem']);
+                
+                if (isset($resultado['erro'])) {
+                    resposta_erro($resultado['erro'], 400);
+                }
+                
+                $caminhoImagem = $resultado['caminho'];
+                
+                // Deletar imagem antiga se houver
+                if (!empty($_POST['imagem_atual']) && $_POST['imagem_atual'] !== $caminhoImagem) {
+                    self::deletar_imagem($_POST['imagem_atual']);
+                }
+            }
+            
+            $dadosQuestao = [
+                'tipo' => $tipo,
+                'status' => $status,
+                'titulo' => $_POST['titulo'],
+                'genero' => $_POST['genero'],
+                'enunciado' => $_POST['enunciado'],
+                'explicacao' => $_POST['explicacao'] ?? '',
+                'especificacao' => $_POST['especificacao'] ?? '',
+                'subgenero' => $_POST['subgenero'] ?? '',
+                'imagem' => $caminhoImagem,
+                'id_usuario_criador' => $usuario_id
+            ];
+            
+            if ($tipo === 'objetiva') {
+                $dadosQuestao['correta'] = $_POST['correta'];
+                $dadosQuestao['alternativas'] = [
+                    'A' => $_POST['alt_A'],
+                    'B' => $_POST['alt_B'],
+                    'C' => $_POST['alt_C'],
+                    'D' => $_POST['alt_D'],
+                    'E' => $_POST['alt_E']
+                ];
+            }
+            
+            if (!empty($id)) {
+                // Atualizar
+                $questaoExistente = Questao::buscarPorId($id, $usuario_id);
+                if ($questaoExistente) {
+                    if (empty($caminhoImagem) && !empty($questaoExistente['imagem'])) {
+                        $dadosQuestao['imagem'] = $questaoExistente['imagem'];
+                    }
+                    $questaoAtualizada = Questao::atualizar($id, $dadosQuestao);
+                    resposta_sucesso(['id' => $questaoAtualizada['id']], 'Questão atualizada com sucesso');
+                } else {
+                    resposta_erro('Questão não encontrada para atualização', 404);
+                }
+            } else {
+                // Criar nova
+                $questaoNova = Questao::criar($dadosQuestao);
+                resposta_sucesso(['id' => $questaoNova['id']], 'Questão criada com sucesso');
+            }
+            
+        } catch (Exception $e) {
+            resposta_erro('Erro ao salvar questão: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Deletar questão
+     * POST /routes/questoes.php?acao=deletar com JSON {id: X}
+     */
+    public static function deletar() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            
+            $dados = obterDadosJSON();
+            $id = $dados['id'] ?? '';
+            
+            if (empty($id)) {
+                resposta_erro('ID da questão é obrigatório', 400);
+            }
+            
+            $id = intval($id);
+            $questao = Questao::buscarPorId($id, $usuario_id);
+            
+            if (!$questao) {
+                resposta_erro('Questão não encontrada', 404);
+            }
+            
+            // Deletar imagem se houver
+            if (!empty($questao['imagem'])) {
+                self::deletar_imagem($questao['imagem']);
+            }
+            
+            Questao::deletar($id);
+            
+            resposta_sucesso(null, 'Questão deletada com sucesso');
+            
+        } catch (Exception $e) {
+            resposta_erro('Erro ao excluir questão: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Enviar questao localmente para outro usuario cadastrado.
+     * POST /routes/questoes.php?acao=enviar com JSON {id, destinatario, descricao}
+     */
+    public static function enviar() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $dados = obterDadosJSON();
+
+            $id = (int)($dados['id'] ?? 0);
+            $destinatarioBusca = trim($dados['destinatario'] ?? ($dados['email'] ?? ''));
+            $descricao = trim($dados['descricao'] ?? '');
+
+            $erros = [];
+            if (!$id) {
+                $erros[] = 'ID da questao e obrigatorio';
+            }
+            if ($destinatarioBusca === '') {
+                $erros[] = 'Informe o email ou nome de usuario do professor';
+            }
+            if ($descricao === '') {
+                $erros[] = 'Descricao do envio e obrigatoria';
+            }
+
+            if (!empty($erros)) {
+                resposta_validacao($erros);
+            }
+
+            $questao = Questao::buscarPorId($id, $usuario_id);
+            if (!$questao) {
+                resposta_erro('Questao nao encontrada', 404);
+            }
+
+            $usuario = Usuario::buscarPorId($usuario_id);
+            if (!$usuario) {
+                resposta_erro('Usuario remetente nao encontrado', 404);
+            }
+
+            $buscaDestinatario = Usuario::buscarPorEmailOuNome($destinatarioBusca);
+            if (!empty($buscaDestinatario['ambiguo'])) {
+                resposta_erro('Mais de um professor usa esse nome. Envie pelo email para identificar o destinatario.', 422);
+            }
+
+            $destinatario = $buscaDestinatario['usuario'] ?? null;
+            if (!$destinatario) {
+                resposta_erro('Professor destinatario nao encontrado', 404);
+            }
+
+            if ((int)$destinatario['id'] === $usuario_id) {
+                resposta_erro('Escolha outro professor para receber a questao', 422);
+            }
+
+            $questaoCopiada = Questao::copiarParaUsuario($questao, (int)$destinatario['id']);
+            $idEnvio = EnvioQuestao::registrar(
+                $id,
+                $usuario_id,
+                $destinatario,
+                $descricao,
+                $questaoCopiada['id'] ?? null
+            );
+
+            resposta_sucesso([
+                'id_envio' => $idEnvio,
+                'id_questao_recebida' => $questaoCopiada['id'] ?? null,
+                'destinatario' => [
+                    'id' => (int)$destinatario['id'],
+                    'nome' => $destinatario['nome'],
+                    'email' => $destinatario['email']
+                ]
+            ], 'Questao enviada localmente com sucesso');
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao enviar questao: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Listar questoes recebidas que ainda nao foram notificadas ao usuario.
+     * GET /routes/questoes.php?acao=recebidas
+     */
+    public static function recebidas() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $envios = EnvioQuestao::listarRecebidasNaoNotificadas($usuario_id);
+
+            resposta_sucesso([
+                'total' => count($envios),
+                'envios' => $envios
+            ]);
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao consultar questoes recebidas: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Marcar avisos de questoes recebidas como exibidos.
+     * POST /routes/questoes.php?acao=marcar_recebidas_notificadas com JSON {ids: []}
+     */
+    public static function marcarRecebidasNotificadas() {
+        try {
+            $usuario_id = verificarAutenticacao();
+            $dados = obterDadosJSON();
+            $ids = $dados['ids'] ?? [];
+
+            EnvioQuestao::marcarComoNotificadas($usuario_id, $ids);
+
+            resposta_sucesso(null, 'Avisos de recebimento marcados como exibidos');
+
+        } catch (Exception $e) {
+            resposta_erro('Erro ao marcar avisos de recebimento: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Salvar imagem
+     */
+    private static function salvar_imagem($arquivo) {
+        if ($arquivo['error'] !== UPLOAD_ERR_OK) {
+            return ['erro' => 'Erro ao fazer upload da imagem'];
+        }
+        
+        // Usar finfo_file em vez de mime_content_type (deprecated)
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime_type = finfo_file($finfo, $arquivo['tmp_name']);
+        finfo_close($finfo);
+        
+        if (!in_array($mime_type, TIPOS_PERMITIDOS)) {
+            return ['erro' => 'Tipo de arquivo não permitido (MIME: ' . $mime_type . ')'];
+        }
+        
+        if ($arquivo['size'] > TAMANHO_MAXIMO_UPLOAD) {
+            return ['erro' => 'Arquivo muito grande (máximo 5MB)'];
+        }
+        
+        $extensoes_validas = EXTENSOES_PERMITIDAS;
+        $nome_original = $arquivo['name'];
+        $extensao = strtolower(pathinfo($nome_original, PATHINFO_EXTENSION));
+        
+        if (!in_array($extensao, $extensoes_validas)) {
+            return ['erro' => 'Extensão de arquivo não permitida'];
+        }
+        
+        $nome_arquivo = uniqid('img_') . '.' . $extensao;
+        $caminho_completo = UPLOADS_PATH . '/' . $nome_arquivo;
+        
+        if (!file_exists(UPLOADS_PATH)) {
+            mkdir(UPLOADS_PATH, 0755, true);
+        }
+        
+        if (!move_uploaded_file($arquivo['tmp_name'], $caminho_completo)) {
+            return ['erro' => 'Erro ao salvar arquivo no servidor'];
+        }
+        
+        return ['caminho' => 'uploads/' . $nome_arquivo];
+    }
+    
+    /**
+     * Deletar imagem
+     */
+    private static function deletar_imagem($caminho) {
+        $caminho_completo = PUBLIC_PATH . '/' . $caminho;
+        if (file_exists($caminho_completo)) {
+            unlink($caminho_completo);
+        }
+    }
+}
+?>

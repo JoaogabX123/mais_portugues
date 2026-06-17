@@ -1,0 +1,112 @@
+<?php
+/**
+ * VIEW: Aba Questão Objetiva
+ * GET /public/?page=questao_objetiva&id=X
+ */
+
+// Sessão já foi iniciada em config.php
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: ./?page=login');
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>+Português - Questão</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script>const BASE_URL = '<?php echo BASE_URL; ?>'; const API_URL = '<?php echo API_URL; ?>'; const UPLOAD_URL = '<?php echo UPLOAD_URL; ?>';</script>
+</head>
+<body>
+    <header class="topbar">
+        <nav class="topbar-inner">
+            <a href="./?page=home" class="logo">+Português</a>
+            <div class="nav-actions">
+                <a class="btn btn-ghost" href="./?page=home">Voltar ao Dashboard</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="app-shell">
+        <div class="container">
+            <div class="questao-aberta" id="conteudo">
+                <p style="text-align:center;color:#888;">Carregando...</p>
+            </div>
+        </div>
+    </main>
+
+    <button class="btn-add" onclick="window.location='./?page=criacao_objetiva'">+ Adicionar questão</button>
+
+    <script>
+        const id = new URLSearchParams(window.location.search).get('id');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!id) { 
+                window.location.href = './?page=home';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}questoes&acao=buscar&id=${encodeURIComponent(id)}`, {
+                    credentials: 'include'
+                });
+                
+                if (!res.ok) { 
+                    window.location.href = './?page=home';
+                    return;
+                }
+
+                const resposta = await res.json();
+                const q = resposta.dados || resposta;
+                
+                if (q.tipo !== 'objetiva') { 
+                    window.location.href = `./?page=questao_dissertativa&id=${id}`;
+                    return;
+                }
+
+                const sub = [q.especificacao, q.subgenero].filter(Boolean).join(' / ');
+                const imgTag = q.imagem
+                    ? `<img src="${UPLOAD_URL}${q.imagem.replace(/^uploads\//, '')}" alt="Imagem da questão" style="max-width:100%;margin:10px 0;">`
+                    : '';
+
+                document.getElementById('conteudo').innerHTML = `
+                    <div class="topo-questao">
+                        <div class="titulo">${q.titulo || '(sem título)'}</div>
+                        <button class="genero-btn">${q.genero || '-'}</button>
+                    </div>
+                    <div class="subgenero">${sub}</div>
+                    <div class="enunciado">${imgTag}${q.enunciado || ''}</div>
+                    <div class="alternativas">
+                        ${Object.entries(q.alternativas || {}).map(([l, t]) => `
+                            <div class="alternativa" onclick="selecionar(this)">
+                                <strong>${l})</strong> ${t}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="explicacao"><b>Resposta correta: ${q.correta}</b><br><br>${q.explicacao || ''}</div>
+                    <div class="botoes">
+                        <button class="btn btn-secondary" onclick="window.location='./?page=home'">Voltar</button>
+                        <button class="btn btn-warning" onclick="window.location='./?page=editar_questao&id=${encodeURIComponent(q.id)}'">Editar</button>
+                        <button class="btn btn-ghost" onclick="copiar()">Copiar</button>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('Erro:', e);
+                window.location.href = './?page=home';
+            }
+        });
+
+        function selecionar(el) {
+            document.querySelectorAll('.alternativa').forEach(a => a.classList.remove('selecionada'));
+            el.classList.add('selecionada');
+        }
+
+        function copiar() {
+            navigator.clipboard.writeText(document.getElementById('conteudo').innerText)
+                .then(() => alert('Questão copiada!'));
+        }
+    </script>
+</body>
+</html>
