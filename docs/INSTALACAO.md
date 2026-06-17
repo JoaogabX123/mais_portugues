@@ -1,13 +1,12 @@
 # Guia de Instalação - +Português
 
-Este guia prepara o +Português em um ambiente local com XAMPP. A aplicação usa PHP MVC, MySQL/MariaDB, autenticação por sessão, recuperação de senha por pergunta de segurança, upload de imagens e isolamento de dados por usuário.
+Este projeto é uma aplicação PHP MVC para gerenciar questões objetivas e dissertativas com autenticação por sessão, upload de imagens e isolamento de dados por usuário.
 
 ## Requisitos
 
-- XAMPP com Apache, PHP 7.4+ e MySQL/MariaDB.
-- Navegador moderno.
-- Projeto em `C:\xampp\htdocs\mais_portugues`.
-- Extensões PHP `mysqli`, `fileinfo` e `session` habilitadas.
+- XAMPP com Apache, PHP 7.4+ e MySQL/MariaDB
+- Navegador moderno
+- Projeto dentro de `C:\xampp\htdocs\mais_portugues`
 
 ## 1. Banco de Dados
 
@@ -29,9 +28,9 @@ Charset recomendado:
 utf8mb4_general_ci
 ```
 
-Ou pelo PowerShell:
+Ou pelo terminal:
 
-```powershell
+```bash
 C:\xampp\mysql\bin\mysql.exe -uroot -e "CREATE DATABASE mais_portugues CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
 ```
 
@@ -47,13 +46,6 @@ CREATE TABLE IF NOT EXISTS usuarios (
   nome VARCHAR(100) NOT NULL,
   tipo ENUM('professor', 'admin') NOT NULL DEFAULT 'professor',
   status TINYINT(1) NOT NULL DEFAULT 1,
-  recuperacao_metodo ENUM('email', 'perguntas') NOT NULL DEFAULT 'email',
-  recuperacao_pergunta VARCHAR(50) NULL,
-  recuperacao_resposta_hash VARCHAR(255) NULL,
-  reset_token_hash VARCHAR(255) NULL,
-  reset_token_expira_em DATETIME NULL,
-  lembrar_token_hash VARCHAR(255) NULL,
-  lembrar_expira_em DATETIME NULL,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ultimo_login DATETIME NULL
 );
@@ -90,41 +82,7 @@ CREATE TABLE IF NOT EXISTS alternativas_objetivas (
     FOREIGN KEY (id_questao) REFERENCES questoes(id)
     ON DELETE CASCADE
 );
-
-CREATE TABLE IF NOT EXISTS envios_questoes (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  id_questao INT NOT NULL,
-  id_questao_copia INT NULL,
-  id_usuario_remetente INT NOT NULL,
-  id_usuario_destinatario INT NULL,
-  email_destinatario VARCHAR(255) NOT NULL,
-  nome_destinatario VARCHAR(100) NULL,
-  descricao TEXT NOT NULL,
-  status ENUM('pendente', 'enviado', 'falha') NOT NULL DEFAULT 'enviado',
-  erro TEXT NULL,
-  criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  enviado_em DATETIME NULL,
-  notificado_em DATETIME NULL,
-  INDEX idx_envios_questao (id_questao),
-  INDEX idx_envios_questao_copia (id_questao_copia),
-  INDEX idx_envios_remetente (id_usuario_remetente),
-  INDEX idx_envios_destinatario (id_usuario_destinatario),
-  CONSTRAINT fk_envios_questao_original
-    FOREIGN KEY (id_questao) REFERENCES questoes(id)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_envios_questao_copia
-    FOREIGN KEY (id_questao_copia) REFERENCES questoes(id)
-    ON DELETE SET NULL,
-  CONSTRAINT fk_envios_usuario_remetente
-    FOREIGN KEY (id_usuario_remetente) REFERENCES usuarios(id)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_envios_usuario_destinatario
-    FOREIGN KEY (id_usuario_destinatario) REFERENCES usuarios(id)
-    ON DELETE SET NULL
-);
 ```
-
-Observação: os models `Usuario` e `EnvioQuestao` também tentam criar ou ajustar colunas/tabelas necessárias automaticamente. Mesmo assim, usar o schema acima deixa uma instalação nova pronta de primeira.
 
 ## 3. Configuração
 
@@ -157,12 +115,16 @@ Com Apache e MySQL ligados no XAMPP, abra:
 http://localhost/mais_portugues/public/
 ```
 
-Telas úteis:
+Login direto:
 
 ```text
 http://localhost/mais_portugues/public/?page=login
+```
+
+Cadastro:
+
+```text
 http://localhost/mais_portugues/public/?page=signup
-http://localhost/mais_portugues/public/?page=recuperar_senha
 ```
 
 ## 5. API Pública
@@ -184,7 +146,6 @@ Rotas disponíveis:
 - `rota=login`
 - `rota=logout`
 - `rota=usuarios`
-- `rota=recuperacao`
 - `rota=questoes`
 
 ## 6. Usuário de Teste
@@ -206,25 +167,22 @@ Credenciais:
 - Email: `teste@teste.com`
 - Senha: `Teste@123`
 
-## 7. Verificação Rápida
+## Troubleshooting
 
-No PowerShell, a partir da pasta `mais_portugues`:
+- `Class "mysqli" not found`: use o PHP do XAMPP ou habilite a extensão `mysqli`.
+- Erro de conexão: confirme se o MySQL está ligado e se `app/config/config.php` está correto.
+- Página abre, mas ações falham: verifique se a URL está em `/mais_portugues/public/`.
+- Upload não funciona: confirme se existe a pasta `public/uploads/` e se o Apache pode gravar nela.
+- Sessão expirada: faça login novamente.
+
+## Verificação Rápida
+
+No PowerShell:
 
 ```powershell
 C:\xampp\php\php.exe -l public\index.php
 C:\xampp\php\php.exe -l public\api.php
-C:\xampp\php\php.exe -l app\routes\usuarios.php
-C:\xampp\php\php.exe -l app\routes\recuperacao.php
 C:\xampp\mysql\bin\mysql.exe -uroot -e "USE mais_portugues; SHOW TABLES;"
 ```
 
-## Troubleshooting
-
-- `Class "mysqli" not found`: use o PHP do XAMPP ou habilite a extensão `mysqli`.
-- Upload falhando: habilite `fileinfo`, confirme `public/uploads/` e permissão de escrita do Apache.
-- Erro de conexão: confira se o MySQL está ligado e se `app/config/config.php` aponta para o banco correto.
-- Página abre, mas ações falham: acesse pela URL `/mais_portugues/public/`.
-- Recuperação indisponível: faça login e configure a pergunta em `Configurações`.
-- Sessão expirada: faça login novamente.
-
-Atualizado em 17/06/2026.
+Versão atualizada em 17/05/2026.

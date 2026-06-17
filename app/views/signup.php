@@ -20,10 +20,10 @@ if (isset($_SESSION['usuario_id'])) {
     <script>const BASE_URL = '<?php echo BASE_URL; ?>'; const API_URL = '<?php echo API_URL; ?>'; const UPLOAD_URL = '<?php echo UPLOAD_URL; ?>';</script>
 </head>
 <body>
-    <div class="container-form auth-form-page">
+    <div class="container-form">
         <div class="header-mini">
-            <a href="./" class="logo">+Português</a>
-            <a href="?page=login" class="back-btn">Já tenho conta</a>
+            <h1>+Português</h1>
+            <p>Gerenciador de Questões</p>
         </div>
 
         <div class="signup-card">

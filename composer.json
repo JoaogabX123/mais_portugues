@@ -1,0 +1,14 @@
+{
+    "name": "mais-portugues/gerenciador-questoes",
+    "description": "Aplicacao PHP MVC para gerenciar questoes objetivas e dissertativas",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

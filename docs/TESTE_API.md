@@ -1,19 +1,17 @@
 # Teste Manual da API
 
-Este roteiro usa `curl.exe` para validar o fluxo principal da API do +Português: cadastro, login, sessão, recuperação de senha, questões, envio local e logout.
-
 Base local:
 
 ```text
 http://localhost/mais_portugues/public/api.php?rota=
 ```
 
-Os exemplos usam `cookies.txt` para manter a sessão entre requisições. No Windows, prefira chamar `curl.exe` para evitar o alias do PowerShell. As quebras com `^` funcionam no `cmd.exe`; no PowerShell, rode em uma única linha ou troque `^` por crase.
+Os exemplos abaixo usam `curl` com cookie jar para manter a sessão.
 
 ## 1. Criar Usuário
 
 ```bash
-curl.exe -c cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=criar" ^
+curl -c cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=criar" ^
   -H "Content-Type: application/json" ^
   -d "{\"nome\":\"Usuário Teste\",\"email\":\"teste@teste.com\",\"senha\":\"Teste@123\"}"
 ```
@@ -32,9 +30,9 @@ Se o usuário já existir, use outro email ou faça login.
 ## 2. Login
 
 ```bash
-curl.exe -c cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=login" ^
+curl -c cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=login" ^
   -H "Content-Type: application/json" ^
-  -d "{\"email\":\"teste@teste.com\",\"senha\":\"Teste@123\",\"lembrar\":true}"
+  -d "{\"email\":\"teste@teste.com\",\"senha\":\"Teste@123\"}"
 ```
 
 Resposta esperada:
@@ -49,7 +47,7 @@ Resposta esperada:
 ## 3. Verificar Sessão
 
 ```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=verificar_sessao"
+curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=verificar_sessao"
 ```
 
 Resposta esperada:
@@ -61,59 +59,19 @@ Resposta esperada:
   "dados": {
     "usuario_id": 1,
     "usuario_email": "teste@teste.com",
-    "tempo_sessao": 10
+    "usuario": {
+      "id": 1,
+      "email": "teste@teste.com",
+      "nome": "Usuário Teste"
+    }
   }
 }
 ```
 
-## 4. Configurar Recuperação
-
-Esta chamada exige usuário logado.
+## 4. Criar Questão Objetiva
 
 ```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=salvar_recuperacao" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"pergunta\":\"primeira_escola\",\"resposta\":\"Escola Municipal\"}"
-```
-
-Conferir configuração:
-
-```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=obter_recuperacao"
-```
-
-## 5. Testar Recuperação Pública
-
-Consultar a conta:
-
-```bash
-curl.exe -X POST "http://localhost/mais_portugues/public/api.php?rota=recuperacao&acao=consultar" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"email\":\"teste@teste.com\"}"
-```
-
-Validar resposta:
-
-```bash
-curl.exe -X POST "http://localhost/mais_portugues/public/api.php?rota=recuperacao&acao=validar_pergunta" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"email\":\"teste@teste.com\",\"resposta\":\"Escola Municipal\"}"
-```
-
-Redefinir senha:
-
-```bash
-curl.exe -X POST "http://localhost/mais_portugues/public/api.php?rota=recuperacao&acao=redefinir" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"email\":\"teste@teste.com\",\"resposta\":\"Escola Municipal\",\"nova_senha\":\"NovaSenha1\"}"
-```
-
-Depois desse teste, a senha passa a ser `NovaSenha1`.
-
-## 6. Criar Questão Objetiva
-
-```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
   -F "tipo=objetiva" ^
   -F "acao=salvar" ^
   -F "titulo=O que é semântica?" ^
@@ -142,10 +100,10 @@ Resposta esperada:
 }
 ```
 
-## 7. Criar Questão Dissertativa
+## 5. Criar Questão Dissertativa
 
 ```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
   -F "tipo=dissertativa" ^
   -F "acao=salvar" ^
   -F "titulo=Análise de texto" ^
@@ -156,32 +114,54 @@ curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?
   -F "subgenero=Crítica"
 ```
 
-## 8. Listar e Buscar Questões
-
-Listar tudo do usuário logado:
+## 6. Listar Questões
 
 ```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=listar"
+curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=listar"
 ```
 
-Listar com filtros:
+Com filtros:
 
 ```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=listar&tipo=objetiva&status=rascunho&busca=semântica"
+curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=listar&tipo=objetiva&status=rascunho&busca=semântica"
 ```
 
-Buscar por ID:
+Resposta esperada:
 
-```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=buscar&id=1"
+```json
+{
+  "ok": true,
+  "dados": {
+    "total": 1,
+    "questoes": [
+      {
+        "id": 1,
+        "titulo": "O que é semântica?",
+        "tipo": "objetiva",
+        "status": "rascunho",
+        "genero": "descritivo",
+        "alternativas": {
+          "A": "Estudo do significado das palavras"
+        },
+        "correta": "A"
+      }
+    ]
+  }
+}
 ```
 
-## 9. Atualizar Questão
+## 7. Buscar Questão por ID
 
-Envie o `id` da questão junto com os demais campos. Usar `acao=postar` muda o status para publicada.
+Troque `1` pelo ID retornado na criação/listagem:
 
 ```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
+curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=buscar&id=1"
+```
+
+## 8. Atualizar Questão
+
+```bash
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
   -F "id=1" ^
   -F "tipo=objetiva" ^
   -F "acao=postar" ^
@@ -197,68 +177,50 @@ curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?
   -F "alt_E=Estudo da sintaxe"
 ```
 
-## 10. Enviar Questão Para Outro Professor
-
-O destinatário precisa estar cadastrado. Use email para evitar ambiguidade.
+## 9. Deletar Questão
 
 ```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=enviar" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"id\":1,\"destinatario\":\"outro.professor@email.com\",\"descricao\":\"Questão para usar na revisão.\"}"
-```
-
-Consultar recebidas ainda não notificadas:
-
-```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=recebidas"
-```
-
-Marcar avisos como exibidos:
-
-```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=marcar_recebidas_notificadas" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"ids\":[1]}"
-```
-
-## 11. Atualizar Perfil e Senha
-
-Atualizar perfil:
-
-```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=atualizar_perfil" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"nome\":\"Usuário Atualizado\",\"email\":\"teste@teste.com\"}"
-```
-
-Alterar senha:
-
-```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=alterar_senha" ^
-  -H "Content-Type: application/json" ^
-  -d "{\"senha_atual\":\"NovaSenha1\",\"nova_senha\":\"Teste@123\"}"
-```
-
-## 12. Deletar Questão
-
-```bash
-curl.exe -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=deletar" ^
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=deletar" ^
   -H "Content-Type: application/json" ^
   -d "{\"id\":1}"
 ```
 
-## 13. Logout
+Resposta esperada:
+
+```json
+{
+  "ok": true,
+  "mensagem": "Questão deletada com sucesso"
+}
+```
+
+## 10. Atualizar Perfil
 
 ```bash
-curl.exe -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=logout"
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=atualizar_perfil" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"nome\":\"Usuário Atualizado\",\"email\":\"teste@teste.com\"}"
+```
+
+## 11. Alterar Senha
+
+```bash
+curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=alterar_senha" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"senha_atual\":\"Teste@123\",\"nova_senha\":\"NovaSenha1\"}"
+```
+
+## 12. Logout
+
+```bash
+curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=logout"
 ```
 
 ## Notas
 
 - Sempre use `-b cookies.txt` depois do login.
 - No JavaScript, use `credentials: 'include'`.
-- Buscar, editar, deletar e enviar só funcionam para questões do usuário logado.
-- Uma resposta `401` normalmente significa sessão ausente, sessão expirada ou resposta de recuperação incorreta.
-- Uma resposta `422` indica dados válidos no formato, mas impossíveis para a regra de negócio, como enviar questão para si mesmo.
+- Buscar, editar e deletar só funcionam para questões do usuário logado.
+- Uma resposta `401` significa sessão ausente ou expirada.
 
-Atualizado em 17/06/2026.
+Atualizado em 17/05/2026.

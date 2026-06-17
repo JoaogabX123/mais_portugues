@@ -7,21 +7,27 @@
 // ============================================
 // 0. TRATAMENTO DE ERROS (deve estar primeiro)
 // ============================================
-error_reporting(E_ALL);
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    header('Content-Type: application/json; charset=utf-8');
-    http_response_code(500);
-    echo json_encode([
-        'ok' => false,
-        'erro' => 'Erro PHP: ' . $errstr,
-        'debug' => [
-            'arquivo' => basename($errfile),
-            'linha' => $errline,
-            'tipo' => $errno
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-});
+if (!defined('APP_TESTING')) {
+    define('APP_TESTING', false);
+}
+
+if (!APP_TESTING) {
+    error_reporting(E_ALL);
+    set_error_handler(function($errno, $errstr, $errfile, $errline) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+        echo json_encode([
+            'ok' => false,
+            'erro' => 'Erro PHP: ' . $errstr,
+            'debug' => [
+                'arquivo' => basename($errfile),
+                'linha' => $errline,
+                'tipo' => $errno
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    });
+}
 
 // ============================================
 // 1. SESSÃO (antes de qualquer coisa)
@@ -60,32 +66,36 @@ $db_config = [
 
 // Criar conexão MySQLi
 global $conexao;
-$conexao = new mysqli(
-    $db_config['servername'],
-    $db_config['usuario'],
-    $db_config['senha'],
-    $db_config['banco'],
-    $db_config['port']
-);
+if (!APP_TESTING) {
+    $conexao = new mysqli(
+        $db_config['servername'],
+        $db_config['usuario'],
+        $db_config['senha'],
+        $db_config['banco'],
+        $db_config['port']
+    );
 
-// Verificar conexão
-if ($conexao->connect_error) {
-    die(json_encode([
-        'ok' => false,
-        'erro' => 'Falha na conexão com o banco de dados: ' . $conexao->connect_error
-    ]));
+    // Verificar conexão
+    if ($conexao->connect_error) {
+        die(json_encode([
+            'ok' => false,
+            'erro' => 'Falha na conexão com o banco de dados: ' . $conexao->connect_error
+        ]));
+    }
+
+    // Configurar charset UTF-8
+    if (!$conexao->set_charset($db_config['charset'])) {
+        die(json_encode([
+            'ok' => false,
+            'erro' => 'Erro ao definir charset: ' . $conexao->error
+        ]));
+    }
+
+    // Habilitar autocommit (padrão MySQL)
+    $conexao->autocommit(true);
+} else {
+    $conexao = null;
 }
-
-// Configurar charset UTF-8
-if (!$conexao->set_charset($db_config['charset'])) {
-    die(json_encode([
-        'ok' => false,
-        'erro' => 'Erro ao definir charset: ' . $conexao->error
-    ]));
-}
-
-// Habilitar autocommit (padrão MySQL)
-$conexao->autocommit(true);
 
 // ============================================
 // 4. CAMINHOS DO PROJETO
