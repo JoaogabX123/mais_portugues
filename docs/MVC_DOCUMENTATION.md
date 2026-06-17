@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-O +Português usa uma arquitetura MVC simples em PHP:
+O +Português usa uma arquitetura MVC simples em PHP para separar tela, regra de negócio e acesso ao banco. A ideia é manter cada parte do sistema em um lugar previsível, facilitando manutenção e evolução.
 
 - `public/`: ponto de entrada HTTP, CSS, uploads e API pública.
 - `app/config/`: configuração global, sessão, banco, constantes e helpers.
@@ -10,6 +10,8 @@ O +Português usa uma arquitetura MVC simples em PHP:
 - `app/controllers/`: regras de negócio.
 - `app/routes/`: dispatchers internos chamados por `public/api.php`.
 - `app/views/`: telas renderizadas pelo router público.
+
+Em resumo: o navegador acessa `public/`, as rotas escolhem o que deve acontecer, os controllers coordenam a ação e os models consultam ou alteram o MySQL.
 
 ## Estrutura Atual
 
@@ -51,6 +53,8 @@ mais_portugues/
 
 ## Fluxo das Telas
 
+As páginas visuais entram por `public/index.php`. O parâmetro `page` indica qual tela deve ser carregada.
+
 ```text
 Navegador
   -> public/index.php?page=home
@@ -61,6 +65,8 @@ Navegador
 Se o usuário não estiver autenticado e tentar acessar uma tela protegida, o router carrega a tela de login.
 
 ## Fluxo da API
+
+As ações assíncronas do frontend entram por `public/api.php`. A rota e a ação são enviadas pela URL, e o corpo da requisição leva os dados necessários quando houver cadastro, edição ou exclusão.
 
 ```text
 Navegador fetch()
@@ -75,7 +81,7 @@ O frontend deve chamar `public/api.php`, não `app/routes/*.php` diretamente.
 
 ## Constantes Importantes
 
-Definidas em `app/config/config.php`:
+Definidas em `app/config/config.php`, elas ajudam o sistema a montar caminhos e URLs sem repetir valores manualmente:
 
 - `BASE_URL`: caminho público detectado automaticamente.
 - `API_URL`: `BASE_URL . 'api.php?rota='`.
@@ -203,6 +209,8 @@ Campos principais:
 - `correta`: obrigatório para objetiva.
 - `alt_A` até `alt_E`: obrigatórios para objetiva.
 
+Quando `acao=salvar`, a questão fica como rascunho. Quando `acao=postar`, ela é marcada como publicada.
+
 ### Deletar Questão
 
 ```http
@@ -228,6 +236,8 @@ Content-Type: application/json
 
 ## Banco de Dados
 
+O banco guarda usuários, questões e alternativas. As questões sempre carregam o identificador do usuário criador, o que permite filtrar o conteúdo de forma segura em todas as operações privadas.
+
 Tabelas:
 
 - `usuarios`
@@ -247,4 +257,4 @@ Relações:
 - Upload máximo: 5 MB.
 - Tipos aceitos: JPEG, PNG, WebP e GIF.
 
-Atualizado em 17/05/2026.
+Atualizado em 25/05/2026.
