@@ -120,4 +120,24 @@ C:\xampp\php\php.exe -l public\api.php
 C:\xampp\mysql\bin\mysql.exe -uroot -e "USE mais_portugues; SHOW TABLES;"
 ```
 
-Atualizado em 17/05/2026.
+## Testes Unitários
+
+O projeto inclui uma suíte inicial de PHPUnit para validar helpers e regras de negócio sem depender do banco durante a execução dos testes.
+
+Instalação e execução:
+
+```powershell
+composer install
+vendor\bin\phpunit
+```
+
+Ou, usando o script do Composer:
+
+```powershell
+composer test
+```
+ou
+
+$phar = Join-Path $env:TEMP 'phpunit.phar'; if (!(Test-Path $phar)) { Invoke-WebRequest -Uri 'https://phar.phpunit.de/phpunit-11.phar' -OutFile $phar }; & 'C:\xampp\php\php.exe' $phar --configuration 'C:\xampp\htdocs\mais_portugues\phpunit.xml.dist'
+
+Atualizado em 17/06/2026.
