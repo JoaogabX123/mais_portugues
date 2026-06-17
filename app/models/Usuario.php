@@ -411,13 +411,13 @@ class Usuario {
     }
 
     public static function salvarRecuperacao($id, $metodo, $pergunta = '', $resposta = '') {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
         $id = (int) $id;
         if (!in_array($metodo, ['email', 'perguntas'], true)) {
             throw new Exception('Metodo de recuperacao invalido');
         }
-
-        global $conexao;
-        self::garantirColunasSeguranca();
 
         $pergunta = $metodo === 'perguntas' ? sanitizarTexto($pergunta) : null;
         $respostaHash = $metodo === 'perguntas' ? password_hash(strtolower(trim($resposta)), PASSWORD_DEFAULT) : null;
@@ -516,13 +516,13 @@ class Usuario {
     }
 
     public static function redefinirSenhaComResposta($email, $resposta, $novaSenha) {
+        global $conexao;
+        self::garantirColunasSeguranca();
+
         if (strlen($novaSenha) < 8 || !preg_match('/[A-Z]/', $novaSenha) ||
             !preg_match('/[a-z]/', $novaSenha) || !preg_match('/\d/', $novaSenha)) {
             throw new Exception('Senha deve ter minimo 8 caracteres, uma maiuscula, uma minuscula e um numero');
         }
-
-        global $conexao;
-        self::garantirColunasSeguranca();
 
         $usuario = self::validarRespostaRecuperacao($email, $resposta);
         if (!$usuario) {
@@ -577,12 +577,12 @@ class Usuario {
 
     public static function redefinirSenhaComToken($token, $novaSenha) {
         global $conexao;
+        self::garantirColunasSeguranca();
+
         if (strlen($novaSenha) < 8 || !preg_match('/[A-Z]/', $novaSenha) ||
             !preg_match('/[a-z]/', $novaSenha) || !preg_match('/\d/', $novaSenha)) {
             throw new Exception('Senha deve ter minimo 8 caracteres, uma maiuscula, uma minuscula e um numero');
         }
-
-        self::garantirColunasSeguranca();
 
         $hashToken = hash('sha256', $token);
         $hashSenha = password_hash($novaSenha, PASSWORD_DEFAULT);

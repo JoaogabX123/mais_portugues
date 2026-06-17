@@ -1,143 +1,299 @@
-# +Português - Gerenciador de Questões
+# 📚 +Português
 
-Aplicação PHP MVC para professores criarem, organizarem e reutilizarem questões objetivas e dissertativas com autenticação, upload de imagens e isolamento de dados por usuário.
+Uma plataforma moderna para professores gerenciarem, organizarem e reutilizarem suas questões de forma eficiente.
 
-## Status
+## 🎯 Objetivo
 
-- Autenticação com email e senha.
-- Cadastro, login e logout.
-- Sessões PHP com cookie `httponly` e `samesite=Lax`.
-- CRUD de questões objetivas e dissertativas.
-- Upload de imagens em `public/uploads/`.
-- Busca e filtros por tipo, status, gênero e subgênero.
-- Cada usuário acessa apenas as próprias questões.
-- Página de configurações com atualização de perfil e alteração de senha.
-- API pública centralizada em `public/api.php`.
+Criar uma solução inteligente que permite professores de todas as categorias de ensino:
+- **Centralizar** todas as suas questões em um único lugar
+- **Organizar** questões por matéria, tipo, gênero e assunto customizado
+- **Filtrar** questões através de filtros customizados avançados
+- **Reutilizar** questões em diferentes avaliações e contextos
+- **Gerenciar** versões e histórico de questões
 
-## Documentação
+---
 
-| Arquivo | Conteúdo |
-| --- | --- |
-| [docs/INSTALACAO.md](docs/INSTALACAO.md) | Instalação no XAMPP, schema SQL e troubleshooting |
-| [docs/MVC_DOCUMENTATION.md](docs/MVC_DOCUMENTATION.md) | Estrutura MVC, fluxo da API e endpoints |
-| [docs/TESTE_API.md](docs/TESTE_API.md) | Exemplos de testes com curl |
+## ✨ Funcionalidades Principais
 
-## Como Acessar
+### 🔐 Autenticação & Segurança
+- Sistema de autenticação com email/senha
+- Validação de email
+- Tokens JWT para sessões seguras
+- Soft delete para preservar histórico
 
-Com Apache e MySQL ligados no XAMPP:
+### 📋 Gerenciamento de Questões
+- Criar, editar, visualizar e deletar questões
+- Suporte para múltiplos tipos:
+  - Questões Objetivas (múltipla escolha)
+  - Questões Discursivas
+  - Questões Dissertativas
+- Marcar questões favoritas
+- Histórico de modificações
 
-```text
-http://localhost/mais_portugues/public/
+### 🏷️ Organização Inteligente
+- **Estrutura hierárquica**: Matéria → Gênero → Assunto
+- Criar categorias e filtros customizados
+- Filtro rápido por matéria, tipo e dificuldade
+- Busca avançada de questões
+
+### 📊 Dashboard
+- Visualização intuitiva de todas as questões
+- Estatísticas sobre questões criadas
+- Acesso rápido a questões recentes
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React** + Vite
+- **CSS** para estilização responsiva
+- **JavaScript** moderno (ES6+)
+
+### Backend
+- **Node.js / Python** (a ser definido)
+- **API RESTful**
+- **JWT** para autenticação
+
+### Banco de Dados
+- **PostgreSQL / MySQL / MongoDB** (a ser definido)
+- **Schema relacional** para hierarquia de matérias/assuntos
+
+---
+
+## 📦 Instalação
+
+### Pré-requisitos
+- Node.js v16+ ou Python 3.8+
+- npm ou pip
+- Git
+
+### Setup Frontend
+
+```bash
+# Clonar repositório
+git clone https://github.com/seu-usuario/banco-questoes.git
+cd banco-questoes
+
+# Instalar dependências
+npm install
+
+# Iniciar servidor de desenvolvimento
+npm run dev
 ```
 
-Login:
+### Setup Backend
 
-```text
-http://localhost/mais_portugues/public/?page=login
+```bash
+# Instalar dependências (Python)
+pip install -r requirements.txt
+
+# Ou (Node.js)
+npm install
+
+# Configurar banco de dados
+# Adicionar variáveis de ambiente em .env
+
+# Iniciar servidor
+python app.py
+# Ou
+npm start
 ```
 
-Cadastro:
+---
 
-```text
-http://localhost/mais_portugues/public/?page=signup
+## 🚀 Como Usar
+
+### Para Professores
+
+1. **Criar Conta**
+   - Acesse a plataforma e registre-se com seu email
+
+2. **Organizar Estrutura**
+   - Configure suas matérias
+   - Crie gêneros/assuntos customizados
+
+3. **Adicionar Questões**
+   - Clique em "Nova Questão"
+   - Preencha título, enunciado e resposta
+   - Categorize conforme sua estrutura criada
+
+4. **Filtrar e Buscar**
+   - Use os filtros para encontrar questões rapidamente
+   - Salve filtros customizados para acesso futuro
+
+5. **Exportar/Utilizar**
+   - Gere listas de questões para provas
+   - Exporte em diferentes formatos
+
+---
+
+## 📁 (Base) - Estrutura do Projeto
+
 ```
-
-## Stack
-
-- PHP 7.4+
-- MySQL/MariaDB
-- MySQLi OOP
-- HTML, CSS e JavaScript vanilla
-- XAMPP como ambiente local
-
-## Estrutura
-
-```text
-mais_portugues/
-├── public/
-│   ├── index.php
-│   ├── api.php
-│   ├── css/style.css
-│   └── uploads/
-├── app/
-│   ├── config/config.php
-│   ├── controllers/
+banco-questoes/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── App.jsx
+│   └── package.json
+├── backend/
 │   ├── models/
 │   ├── routes/
-│   └── views/
-└── docs/
+│   ├── controllers/
+│   ├── middleware/
+│   └── app.py (ou server.js)
+├── database/
+│   └── schema.sql
+├── docs/
+│   └── API.md
+└── README.md
 ```
 
-## API
+---
 
-Base local:
+## 🔄 Fluxo de Desenvolvimento
 
-```text
-http://localhost/mais_portugues/public/api.php?rota=
+### Fases Planejadas
+
+**Fase 1: Infraestrutura & Autenticação** (Semanas 1-2)
+- Setup do servidor
+- Configuração do banco de dados
+- Sistema de login/registro
+
+**Fase 2: Tela Inicial & Visualização** (Semanas 2-3)
+- Dashboard inicial
+- Listagem de questões
+- Filtros básicos
+
+**Fase 3: CRUD de Questões** (Semanas 3-5)
+- Criar questões
+- Editar questões
+- Deletar questões
+- Gerenciamento de categorias
+
+**Fase 4: Filtros Avançados** (Semanas 5-6)
+- Filtros customizados
+- Busca avançada
+- Salvamento de filtros
+
+**Fases 5+: Funcionalidades Extras**
+- Provas/Avaliações
+- Compartilhamento
+- Relatórios
+- API pública
+
+---
+
+## 👥 Equipe
+
+- **Frontend**: João Gabriel, Maria Luísa
+- **Backend/Banco de Dados**: Demais membros da equipe
+
+---
+
+## 📖 Documentação Adicional
+
+- [Especificações Técnicas](./TRELLO_PROJETO_BANCO_QUESTOES.md)
+- [Guia de Setup do Trello](./COMO_USAR_IMPORT_TRELLO.md)
+- [Roadmap Detalhado](./TRELLO_PROJETO_BANCO_QUESTOES.md)
+
+---
+
+## 🔧 Desenvolvimento
+
+### Configurar Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=banco_questoes
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha
+
+# Backend
+BACKEND_URL=http://localhost:5000
+API_PORT=5000
+
+# Frontend
+VITE_API_URL=http://localhost:5000
+
+# JWT
+JWT_SECRET=sua_chave_secreta_aqui
+JWT_EXPIRATION=24h
 ```
 
-Exemplos:
+### Comandos Úteis
 
-```text
-POST /api.php?rota=login
-GET  /api.php?rota=usuarios&acao=verificar_sessao
-GET  /api.php?rota=questoes&acao=listar
-POST /api.php?rota=questoes&acao=salvar
-POST /api.php?rota=questoes&acao=deletar
+```bash
+# Desenvolvimento
+npm run dev          # Frontend
+npm run dev:backend  # Backend
+
+# Build para produção
+npm run build
+
+# Testes
+npm test
+
+# Linter
+npm run lint
 ```
 
-No frontend, as requisições usam `credentials: 'include'` para manter a sessão.
+---
 
-## Banco de Dados
+## 🐛 Reportar Problemas
 
-Banco padrão:
+Encontrou um bug? Abra uma [issue](https://github.com/seu-usuario/banco-questoes/issues) descrevendo:
+- Comportamento esperado
+- Comportamento atual
+- Passos para reproduzir
+- Screenshots (se aplicável)
 
-```text
-mais_portugues
-```
+---
 
-Tabelas:
+## 💡 Contribuindo
 
-- `usuarios`
-- `questoes`
-- `alternativas_objetivas`
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
+3. Commit suas mudanças (`git commit -m 'Add: Minha feature'`)
+4. Push para a branch (`git push origin feature/MinhaFeature`)
+5. Abra um Pull Request
 
-O schema completo está em [docs/INSTALACAO.md](docs/INSTALACAO.md).
+---
 
-## Segurança
+## 📝 Convenções de Código
 
-- Senhas com `password_hash(PASSWORD_DEFAULT)`.
-- Queries com prepared statements.
-- Autenticação obrigatória em operações privadas.
-- Questões filtradas por `id_usuario_criador`.
-- Buscar, editar e excluir validam a propriedade da questão.
+- **Nomes em inglês** para variáveis, funções e classes
+- **Commits semânticos**: `feat:`, `fix:`, `docs:`, `refactor:`
+- **Mobile-first** no design responsivo
+- **Testes** para novas funcionalidades
 
-## Verificação Rápida
+---
 
-```powershell
-C:\xampp\php\php.exe -l public\index.php
-C:\xampp\php\php.exe -l public\api.php
-C:\xampp\mysql\bin\mysql.exe -uroot -e "USE mais_portugues; SHOW TABLES;"
-```
+## 📄 Licença
 
-## Testes Unitários
+Este projeto está sob a licença [MIT](LICENSE). Veja o arquivo LICENSE para mais detalhes.
 
-O projeto inclui uma suíte inicial de PHPUnit para validar helpers e regras de negócio sem depender do banco durante a execução dos testes.
+---
 
-Instalação e execução:
+## 📞 Contato & Suporte
 
-```powershell
-composer install
-vendor\bin\phpunit
-```
+Para dúvidas, sugestões ou problemas:
+- Abra uma [issue](https://github.com/seu-usuario/banco-questoes/issues)
+- Entre em contato com a equipe via [email]
 
-Ou, usando o script do Composer:
+---
 
-```powershell
-composer test
-```
-ou
+## 🙏 Agradecimentos
 
-$phar = Join-Path $env:TEMP 'phpunit.phar'; if (!(Test-Path $phar)) { Invoke-WebRequest -Uri 'https://phar.phpunit.de/phpunit-11.phar' -OutFile $phar }; & 'C:\xampp\php\php.exe' $phar --configuration 'C:\xampp\htdocs\mais_portugues\phpunit.xml.dist'
+Obrigado a todos que contribuíram para este projeto!
 
-Atualizado em 17/06/2026.
+---
+
+**Última atualização**: Abril de 2026

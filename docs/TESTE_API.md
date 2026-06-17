@@ -1,12 +1,14 @@
 # Teste Manual da API
 
+Este guia reúne chamadas `curl` para conferir o funcionamento básico da API do +Português. A sequência simula o fluxo normal de uso: criar usuário, entrar na sessão, manipular questões, atualizar perfil e sair.
+
 Base local:
 
 ```text
 http://localhost/mais_portugues/public/api.php?rota=
 ```
 
-Os exemplos abaixo usam `curl` com cookie jar para manter a sessão.
+Os exemplos abaixo usam `curl` com cookie jar para manter a sessão entre as requisições. O arquivo `cookies.txt` guarda o cookie criado no login e deve ser reutilizado nas chamadas autenticadas.
 
 ## 1. Criar Usuário
 
@@ -29,6 +31,8 @@ Se o usuário já existir, use outro email ou faça login.
 
 ## 2. Login
 
+O login cria a sessão usada pelas próximas chamadas. Por isso este comando também usa `-c cookies.txt`.
+
 ```bash
 curl -c cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=login" ^
   -H "Content-Type: application/json" ^
@@ -45,6 +49,8 @@ Resposta esperada:
 ```
 
 ## 3. Verificar Sessão
+
+Use esta chamada para confirmar se o cookie ainda representa um usuário autenticado.
 
 ```bash
 curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=verificar_sessao"
@@ -69,6 +75,8 @@ Resposta esperada:
 ```
 
 ## 4. Criar Questão Objetiva
+
+Questões objetivas exigem cinco alternativas e a indicação da correta. Neste exemplo, a questão é salva como rascunho.
 
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
@@ -102,6 +110,8 @@ Resposta esperada:
 
 ## 5. Criar Questão Dissertativa
 
+Questões dissertativas não precisam de alternativas, mas usam os mesmos campos principais de título, gênero, enunciado e explicação.
+
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
   -F "tipo=dissertativa" ^
@@ -115,6 +125,8 @@ curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota
 ```
 
 ## 6. Listar Questões
+
+A listagem retorna apenas as questões do usuário logado. Os filtros são opcionais e podem ser combinados.
 
 ```bash
 curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=listar"
@@ -160,6 +172,8 @@ curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=questoe
 
 ## 8. Atualizar Questão
 
+Para atualizar, envie o `id` da questão junto com os demais campos. Usar `acao=postar` marca a questão como publicada.
+
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=salvar" ^
   -F "id=1" ^
@@ -179,6 +193,8 @@ curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota
 
 ## 9. Deletar Questão
 
+A exclusão só funciona quando o `id` pertence ao usuário autenticado.
+
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=questoes&acao=deletar" ^
   -H "Content-Type: application/json" ^
@@ -196,6 +212,8 @@ Resposta esperada:
 
 ## 10. Atualizar Perfil
 
+Atualiza os dados básicos do usuário logado.
+
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=atualizar_perfil" ^
   -H "Content-Type: application/json" ^
@@ -204,6 +222,8 @@ curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota
 
 ## 11. Alterar Senha
 
+Troca a senha depois de validar a senha atual.
+
 ```bash
 curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota=usuarios&acao=alterar_senha" ^
   -H "Content-Type: application/json" ^
@@ -211,6 +231,8 @@ curl -b cookies.txt -X POST "http://localhost/mais_portugues/public/api.php?rota
 ```
 
 ## 12. Logout
+
+Encerra a sessão atual.
 
 ```bash
 curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=logout"
@@ -223,4 +245,4 @@ curl -b cookies.txt "http://localhost/mais_portugues/public/api.php?rota=logout"
 - Buscar, editar e deletar só funcionam para questões do usuário logado.
 - Uma resposta `401` significa sessão ausente ou expirada.
 
-Atualizado em 17/05/2026.
+Atualizado em 25/05/2026.
