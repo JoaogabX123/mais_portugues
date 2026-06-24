@@ -224,11 +224,12 @@ class Questao {
     
     /**
      * Copiar uma questao existente para outro usuario.
+     * Copia apenas dados essenciais, nunca IDs ou timestamps.
      */
     public static function copiarParaUsuario($questao, $idUsuarioDestino) {
         $dados = [
             'tipo' => $questao['tipo'] ?? 'objetiva',
-            'status' => $questao['status'] ?? 'rascunho',
+            'status' => 'rascunho', // Sempre rascunho ao copiar
             'titulo' => self::textoParaCopia($questao['titulo'] ?? ''),
             'genero' => self::textoParaCopia($questao['genero'] ?? ''),
             'subgenero' => self::textoParaCopia($questao['subgenero'] ?? ''),
@@ -254,31 +255,46 @@ class Questao {
         return html_entity_decode((string)$texto, ENT_QUOTES, 'UTF-8');
     }
 
+    /**
+     * Copiar imagem local para novo arquivo
+     * Garante que a imagem seja copiada com sucesso antes de retornar o caminho
+     */
     private static function copiarImagemLocal($caminhoImagem) {
         $caminhoImagem = trim((string)$caminhoImagem);
         if ($caminhoImagem === '') {
             return '';
         }
 
-        $origem = PUBLIC_PATH . '/' . ltrim($caminhoImagem, '/\\');
-        if (!is_file($origem)) {
-            return $caminhoImagem;
+        // Normalizar caminho removendo "uploads/" se existir
+        $caminhoLimpo = ltrim(str_replace('uploads/', '', $caminhoImagem), '/\\');
+        $origem = PUBLIC_PATH . '/uploads/' . $caminhoLimpo;
+
+        if (!file_exists($origem) || !is_file($origem)) {
+            // Se arquivo não existe, retorna vazio (falhou)
+            return '';
         }
 
         $extensao = strtolower(pathinfo($origem, PATHINFO_EXTENSION));
         if (!in_array($extensao, EXTENSOES_PERMITIDAS)) {
-            return $caminhoImagem;
+            return '';
         }
 
         if (!file_exists(UPLOADS_PATH)) {
             mkdir(UPLOADS_PATH, 0755, true);
         }
 
-        $destinoNome = uniqid('img_envio_') . '.' . $extensao;
+        // Gerar nome único para cópia
+        $destinoNome = uniqid('img_copy_') . '.' . $extensao;
         $destino = UPLOADS_PATH . '/' . $destinoNome;
 
-        if (!copy($origem, $destino)) {
-            return $caminhoImagem;
+        // Copiar arquivo
+        if (!@copy($origem, $destino)) {
+            return '';
+        }
+
+        // Verificar que cópia foi bem-sucedida
+        if (!file_exists($destino)) {
+            return '';
         }
 
         return 'uploads/' . $destinoNome;
