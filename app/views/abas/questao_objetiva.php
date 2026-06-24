@@ -67,29 +67,35 @@ if (!isset($_SESSION['usuario_id'])) {
                 }
 
                 const sub = [q.especificacao, q.subgenero].filter(Boolean).join(' / ');
-                const imgTag = q.imagem
-                    ? `<img src="${UPLOAD_URL}${q.imagem.replace(/^uploads\//, '')}" alt="Imagem da questão" style="max-width:100%;margin:10px 0;">`
-                    : '';
+                
+                // Construir URL de imagem corretamente
+                let imgTag = '';
+                if (q.imagem) {
+                    const caminhoImg = q.imagem.startsWith('uploads/') ? q.imagem : 'uploads/' + q.imagem.replace(/^.*\//, '');
+                    imgTag = `<img src="${BASE_URL}${caminhoImg}" alt="Imagem da questão" style="max-width:100%;margin:10px 0;border-radius:8px;">`;
+                }
 
                 document.getElementById('conteudo').innerHTML = `
-                    <div class="topo-questao">
-                        <div class="titulo">${q.titulo || '(sem título)'}</div>
-                        <button class="genero-btn">${q.genero || '-'}</button>
+                    <div id="conteudo-questao">
+                        <div class="topo-questao">
+                            <div class="titulo">${q.titulo || '(sem título)'}</div>
+                            <button class="genero-btn">${q.genero || '-'}</button>
+                        </div>
+                        <div class="subgenero">${sub}</div>
+                        <div class="enunciado">${imgTag}${q.enunciado || ''}</div>
+                        <div class="alternativas">
+                            ${Object.entries(q.alternativas || {}).map(([l, t]) => `
+                                <div class="alternativa" onclick="selecionar(this)">
+                                    <strong>${l})</strong> ${t}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="explicacao"><b>Resposta correta: ${q.correta}</b><br><br>${q.explicacao || ''}</div>
                     </div>
-                    <div class="subgenero">${sub}</div>
-                    <div class="enunciado">${imgTag}${q.enunciado || ''}</div>
-                    <div class="alternativas">
-                        ${Object.entries(q.alternativas || {}).map(([l, t]) => `
-                            <div class="alternativa" onclick="selecionar(this)">
-                                <strong>${l})</strong> ${t}
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="explicacao"><b>Resposta correta: ${q.correta}</b><br><br>${q.explicacao || ''}</div>
                     <div class="botoes">
                         <button class="btn btn-secondary" onclick="window.location='./?page=home'">Voltar</button>
                         <button class="btn btn-warning" onclick="window.location='./?page=editar_questao&id=${encodeURIComponent(q.id)}'">Editar</button>
-                        <button class="btn btn-ghost" onclick="copiar()">Copiar</button>
+                        <button class="btn btn-primary" onclick="copiar()">📋 Copiar</button>
                     </div>
                 `;
             } catch (e) {
@@ -103,9 +109,44 @@ if (!isset($_SESSION['usuario_id'])) {
             el.classList.add('selecionada');
         }
 
-        function copiar() {
-            navigator.clipboard.writeText(document.getElementById('conteudo').innerText)
-                .then(() => alert('Questão copiada!'));
+        async function copiar() {
+            const elemento = document.getElementById('conteudo-questao');
+            const clone = elemento.cloneNode(true);
+            
+            // Converter imagens para base64
+            const imagens = clone.querySelectorAll('img');
+            for (let img of imagens) {
+                try {
+                    const response = await fetch(img.src);
+                    if (!response.ok) throw new Error('Falha ao buscar imagem');
+                    
+                    const blob = await response.blob();
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    
+                    img.src = base64;
+                } catch (e) {
+                    console.error('Erro ao converter imagem:', e);
+                }
+            }
+            
+            const html = clone.innerHTML;
+            
+            navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([elemento.innerText], { type: 'text/plain' })
+                })
+            ]).then(() => {
+                alert('Questão copiada com imagem para a área de transferência!');
+            }).catch((err) => {
+                console.error('Erro no clipboard:', err);
+                alert('Erro ao copiar questão');
+            });
         }
     </script>
 </body>
